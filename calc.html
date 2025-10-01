@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"> <!-- Définit l'encodage des caractères en UTF-8 (permet d'afficher les accents correctement) -->
+  <title>Calculatrice JS</title> <!-- Titre qui s'affichera dans l'onglet du navigateur -->
+
+  <style>
+    /* ----- Style général de la page ----- */
+    body {
+      font-family: Arial, sans-serif;   /* Police d'écriture */
+      background: #20232a;             /* Couleur de fond (gris foncé) */
+      color: #f0f0f0;                  /* Couleur du texte (gris clair) */
+      text-align: center;              /* Centre le contenu */
+      padding: 20px;                   /* Ajoute des marges internes */
+    }
+
+    h1 {
+      color: #61dafb;                  /* Couleur bleue du titre */
+    }
+
+    /* ----- Conteneur de la calculatrice ----- */
+    .calculator {
+      display: inline-block;           /* Affiche le bloc en ligne */
+      background: #282c34;             /* Fond de la calculatrice (gris encore plus foncé) */
+      padding: 20px;                   /* Marge interne autour du contenu */
+      border-radius: 15px;             /* Coins arrondis */
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.5); /* Ombre pour effet 3D */
+    }
+
+    /* ----- Zone d'affichage ----- */
+    #display {
+      width: 220px;                    /* Largeur fixe */
+      height: 40px;                    /* Hauteur fixe */
+      margin-bottom: 15px;             /* Espace en bas */
+      text-align: right;               /* Texte aligné à droite (comme les vraies calculatrices) */
+      font-size: 20px;                 /* Taille du texte */
+      padding: 5px;                    /* Marge interne */
+      border-radius: 5px;              /* Coins arrondis */
+      border: none;                    /* Supprime la bordure par défaut */
+    }
+
+    /* ----- Style de base pour les boutons ----- */
+    .btn {
+      width: 50px;                     /* Largeur fixe */
+      height: 50px;                    /* Hauteur fixe */
+      margin: 5px;                     /* Espace autour du bouton */
+      font-size: 18px;                 /* Taille du texte */
+      border: none;                    /* Pas de bordure par défaut */
+      border-radius: 10px;             /* Coins arrondis */
+      background: #61dafb;             /* Couleur de fond bleue */
+      color: #20232a;                  /* Couleur du texte (gris foncé) */
+      font-weight: bold;               /* Texte en gras */
+      cursor: pointer;                 /* Curseur "main" au survol */
+    }
+
+    /* Effet quand on passe la souris sur un bouton normal */
+    .btn:hover {
+      background: #21a1f1;             /* Bleu plus foncé */
+    }
+
+    /* ----- Boutons opérateurs (+, -, *, /) ----- */
+    .btn-operator {
+      background: #ffcc00;             /* Jaune */
+    }
+
+    .btn-operator:hover {
+      background: #e6b800;             /* Jaune foncé */
+    }
+
+    /* ----- Bouton "=" ----- */
+    .btn-equal {
+      background: #4caf50;             /* Vert */
+      color: white;                    /* Texte blanc */
+    }
+
+    .btn-equal:hover {
+      background: #45a049;             /* Vert foncé */
+    }
+
+    /* ----- Bouton "C" (clear) ----- */
+    .btn-clear {
+      background: #f44336;             /* Rouge */
+      color: white;                    /* Texte blanc */
+    }
+
+    .btn-clear:hover {
+      background: #d32f2f;             /* Rouge foncé */
+    }
+  </style>
+</head>
+<body>
+  <!-- Titre principal -->
+  <h1>🧮 Calculatrice JavaScript</h1>
+
+  <!-- Bloc qui contient toute la calculatrice -->
+  <div class="calculator">
+
+    <!-- Champ texte qui affiche le contenu (désactivé pour empêcher la saisie manuelle) -->
+    <input type="text" id="display" disabled>
+
+    <br> <!-- Retour à la ligne -->
+
+    <!-- ======================= -->
+    <!-- Bloc regroupant tous les boutons -->
+    <!-- ======================= -->
+    <div class="buttons">
+
+      <!-- Ligne 1 -->
+      <button class="btn" onclick="appendNumber('7')">7</button>
+      <button class="btn" onclick="appendNumber('8')">8</button>
+      <button class="btn" onclick="appendNumber('9')">9</button>
+      <button class="btn btn-operator" onclick="appendOperator('/')">÷</button>
+
+      <br>
+
+      <!-- Ligne 2 -->
+      <button class="btn" onclick="appendNumber('4')">4</button>
+      <button class="btn" onclick="appendNumber('5')">5</button>
+      <button class="btn" onclick="appendNumber('6')">6</button>
+      <button class="btn btn-operator" onclick="appendOperator('*')">×</button>
+
+      <br>
+
+      <!-- Ligne 3 -->
+      <button class="btn" onclick="appendNumber('1')">1</button>
+      <button class="btn" onclick="appendNumber('2')">2</button>
+      <button class="btn" onclick="appendNumber('3')">3</button>
+      <button class="btn btn-operator" onclick="appendOperator('-')">−</button>
+
+      <br>
+
+      <!-- Ligne 4 -->
+      <button class="btn" onclick="appendNumber('0')">0</button>
+      <button class="btn" onclick="appendDot()">.</button>
+      <button class="btn btn-clear" onclick="clearDisplay()">C</button>
+      <button class="btn btn-operator" onclick="appendOperator('+')">+</button>
+
+      <br>
+
+      <!-- Ligne 5 : bouton "=" qui prend toute la largeur -->
+      <button class="btn btn-equal" style="width: 220px;" onclick="calculateResult()">=</button>
+
+    </div> <!-- fin du bloc boutons -->
+
+  </div> <!-- fin de .calculator -->
+
+  <script>
+    // ======================
+    // PARTIE JAVASCRIPT
+    // ======================
+
+    // On récupère l'élément HTML qui correspond à l'afficheur
+    let display = document.getElementById("display");
+
+    // ----- Fonction pour ajouter un chiffre -----
+    function appendNumber(number) {
+      // Concatène le chiffre cliqué à ce qui est déjà affiché
+      display.value += number;
+    }
+
+    // ----- Fonction pour ajouter un opérateur -----
+    function appendOperator(operator) {
+      // Récupère le dernier caractère affiché
+      let lastChar = display.value.slice(-1);
+      // Vérifie si ce dernier caractère est déjà un opérateur
+      if (['+', '-', '*', '/'].includes(lastChar)) {
+        return; // Si oui, on arrête (empêche "++" ou "**")
+      }
+      // Sinon, on ajoute l'opérateur
+      display.value += operator;
+    }
+
+    // ----- Fonction pour ajouter un point décimal -----
+    function appendDot() {
+      // Sépare le contenu selon les opérateurs (+, -, *, /)
+      let lastNumber = display.value.split(/[\+\-\*\/]/).pop();
+      // Vérifie que ce dernier nombre ne contient pas déjà un "."
+      if (!lastNumber.includes('.')) {
+        // Ajoute le point décimal
+        display.value += '.';
+      }
+    }
+
+    // ----- Fonction pour effacer l'afficheur -----
+    function clearDisplay() {
+      display.value = ""; // Remet l'afficheur à vide
+    }
+
+    // ----- Fonction pour calculer le résultat -----
+    function calculateResult() {
+      try {
+        // Utilise eval() pour calculer l'expression
+        // Exemple : "2+3*4" → 14
+        display.value = eval(display.value);
+      } catch (e) {
+        // Si erreur (ex : expression invalide)
+        display.value = "Erreur";
+      }
+    }
+  </script>
+</body>
+</html>

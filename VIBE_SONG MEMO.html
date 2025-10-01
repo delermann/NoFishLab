@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Rap Notes — Studio 🧾🎧</title>
+<style>
+  :root{
+    --bg:#f5f3ef; --panel:#faf8f5; --muted:#8a8176; --accent:#cfc7b8; --card:#fffdf9; --text:#222;
+    --danger:#d9534f; --glass: rgba(255,255,255,0.6);
+  }
+  [data-theme="dark"]{
+    --bg:#111214; --panel:#151617; --muted:#9aa0a6; --accent:#2b2f32; --card:#0f1112; --text:#e6e6e6; --glass: rgba(0,0,0,0.6);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:Inter, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--text);
+    height:100vh; display:flex; gap:0;
+  }
+
+  /* Sidebar */
+  #sidebar{
+    width:300px; background:var(--panel); border-right:1px solid rgba(0,0,0,0.05);
+    display:flex; flex-direction:column; transition: width .2s;
+  }
+  #sidebar .top{
+    display:flex; align-items:center; justify-content:space-between; padding:16px 14px; border-bottom:1px solid rgba(0,0,0,0.04);
+  }
+  #title{font-weight:700; font-size:18px}
+  #controls{display:flex; gap:8px; align-items:center}
+  button.icon{background:transparent;border:none;cursor:pointer;padding:6px;border-radius:8px}
+  button.primary{background:var(--accent); border:none; padding:8px 10px; border-radius:8px; cursor:pointer}
+
+  #newSongBtn{background:linear-gradient(0deg,#e9e5db,#e6e1d8); border-radius:8px; padding:8px 10px; cursor:pointer; border:1px solid rgba(0,0,0,0.04)}
+  #search{width:100%;padding:10px;border:0;background:transparent;outline:none;color:var(--text)}
+
+  #songList{flex:1; overflow:auto}
+  .song-item{padding:12px 14px;border-bottom:1px solid rgba(0,0,0,0.03); cursor:pointer; display:flex; justify-content:space-between; align-items:center}
+  .song-item:hover{background:rgba(0,0,0,0.02)}
+  .song-item.active{background:linear-gradient(90deg,rgba(0,0,0,0.03),transparent); font-weight:600}
+
+  /* Editor area */
+  #editor{flex:1; display:flex; flex-direction:column; min-width:0}
+  #editor-header{display:flex; gap:12px; align-items:center; padding:12px 18px; border-bottom:1px solid rgba(0,0,0,0.04); background:var(--panel)}
+  #songTitle{font-size:18px; padding:8px 10px; border-radius:8px; border:1px solid rgba(0,0,0,0.06); background:var(--card); flex:1}
+  #meta{display:flex; gap:8px; align-items:center}
+  select, input[type="number"]{padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06); background:var(--card)}
+  #top-actions{display:flex; gap:8px; align-items:center}
+
+  /* Main content */
+  #content{display:flex; gap:18px; padding:16px; align-items:flex-start; overflow:auto}
+  #left-panel{width:48%; min-width:300px; background:var(--card); border-radius:12px; padding:12px; box-shadow: 0 6px 18px rgba(0,0,0,0.03)}
+  #right-panel{flex:1; min-width:320px; background:var(--card); border-radius:12px; padding:12px; box-shadow: 0 6px 18px rgba(0,0,0,0.03)}
+
+  /* Sections list */
+  .section-list{display:flex; flex-direction:column; gap:8px}
+  .section-card{padding:10px;border-radius:8px;border:1px dashed rgba(0,0,0,0.06); background:linear-gradient(0deg, rgba(255,255,255,0.6), transparent); cursor:grab}
+  .section-card.dragging{opacity:0.5}
+  .section-header{display:flex; justify-content:space-between; gap:8px; align-items:center}
+  .section-type{font-weight:700}
+  .section-text{width:100%; min-height:80px; resize:vertical; padding:8px; margin-top:8px; border-radius:6px; border:1px solid rgba(0,0,0,0.06); background:transparent; color:var(--text)}
+
+  .small{font-size:13px; color:var(--muted)}
+
+  /* audio area */
+  #audio-area{display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap}
+  input[type=file]{display:none}
+  .file-btn{padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);cursor:pointer;background:transparent}
+
+  /* bottom actions */
+  #bottom-actions{display:flex; gap:8px; margin-top:12px; justify-content:flex-end}
+  .danger{background:var(--danger); color:white; padding:8px 10px;border:none;border-radius:8px; cursor:pointer}
+
+  /* modal */
+  .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.4)}
+  .modal.open{display:flex}
+  .modal-card{background:var(--card); padding:18px; border-radius:12px; width:90%; max-width:560px}
+
+  /* responsive */
+  @media (max-width:900px){
+    #sidebar{width:72px}
+    #title{display:none}
+    #search{display:none}
+    #newSongBtn{display:none}
+    #left-panel{display:none}
+    #content{padding:12px}
+  }
+</style>
+</head>
+<body data-theme="">
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="top">
+    <div id="title">🎤 Rap Notes</div>
+    <div id="controls">
+      <button class="icon" id="toggleTheme" title="Mode sombre/claire">🌙</button>
+      <button class="icon" id="toggleSidebar" title="Réduire la barre">⬅️</button>
+    </div>
+  </div>
+
+  <div style="padding:10px;border-bottom:1px solid rgba(0,0,0,0.04);">
+    <input id="search" placeholder="Rechercher... 🔎" />
+    <div style="margin-top:10px; display:flex; gap:8px;">
+      <button id="newSongBtn">➕ Nouvelle</button>
+      <button id="manageCategoriesBtn" class="file-btn" title="Gérer catégories">⚙️ Catégories</button>
+    </div>
+  </div>
+
+  <div id="songList"></div>
+</div>
+
+<!-- EDITOR -->
+<div id="editor">
+  <div id="editor-header">
+    <input id="songTitle" placeholder="Titre de la chanson... 🎶" />
+    <div id="meta">
+      <select id="categorySelect" title="Catégorie"></select>
+      <select id="genreSelect" title="Genre">
+        <option>Rap</option><option>Trap</option><option>Drill</option><option>Lo-Fi</option><option>R&B</option><option>Autre</option>
+      </select>
+      <input id="bpmInput" type="number" min="40" max="240" placeholder="BPM" style="width:84px" />
+      <input id="keyInput" placeholder="Key" style="width:84px" />
+      <div id="top-actions">
+        <button id="saveBtn" class="primary">💾 Enregistrer</button>
+        <button id="exportTxtBtn" class="file-btn">📄 Export TXT</button>
+        <button id="exportPdfBtn" class="file-btn">🖨️ Export PDF</button>
+        <button id="deleteSongBtn" class="danger" title="Supprimer la chanson">🗑️ Suppr</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="content">
+    <!-- left panel: metadata & audio -->
+    <div id="left-panel">
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <div style="font-weight:700">Informations ✨</div>
+        <div class="small">Variables modifiables</div>
+      </div>
+
+      <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px">
+        <label class="small">Mood (humeur)</label>
+        <input id="moodInput" placeholder="Ex: sombre, agressif, mélancolique" />
+
+        <label class="small">Tags (séparés par ,)</label>
+        <input id="tagsInput" placeholder="ex: battle, love, street" />
+
+        <label class="small">Durée cible (min)</label>
+        <input id="durationInput" type="number" min="0" placeholder="ex: 3" />
+
+        <hr />
+
+        <div style="font-weight:700">Instru (upload mp3) 🎧</div>
+        <div class="small">Upload un mp3 - stocké localement (base64) ⚠️ quota navigateur</div>
+
+        <div id="audio-area">
+          <label class="file-btn" for="audioFileInput">⬆️ Choisir MP3</label>
+          <input id="audioFileInput" type="file" accept="audio/*">
+          <button id="removeAudioBtn" class="file-btn">❌ Retirer</button>
+        </div>
+
+        <div id="audioPlayerWrap" style="margin-top:8px; display:none">
+          <audio id="audioPlayer" controls preload="none" style="width:100%"></audio>
+          <div class="small" id="audioFilename"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- right panel : sections editor -->
+    <div id="right-panel">
+      <div style="display:flex; align-items:center; justify-content:space-between">
+        <div style="font-weight:700">Sections ✂️</div>
+        <div class="small">Drag & drop pour réordonner ↕️</div>
+      </div>
+
+      <div style="margin-top:10px; display:flex; gap:8px;">
+        <select id="newSectionType">
+          <option>Couplet</option>
+          <option>Refrain</option>
+          <option>Pont</option>
+          <option>Intro</option>
+          <option>Outro</option>
+          <option>Adlib</option>
+        </select>
+        <button id="addSectionBtn" class="file-btn">➕ Ajouter section</button>
+        <button id="clearSectionsBtn" class="file-btn">🧽 Vider</button>
+      </div>
+
+      <div class="section-list" id="sectionList" style="margin-top:12px"></div>
+
+      <div id="bottom-actions">
+        <button id="playAllBtn" class="file-btn">▶️ Jouer tout</button>
+        <button id="downloadAllTxtBtn" class="file-btn">📥 Télécharger tout (TXT)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: manage categories -->
+<div class="modal" id="categoriesModal">
+  <div class="modal-card">
+    <h3>Gérer les catégories 📂</h3>
+    <div id="categoriesList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <input id="newCategoryInput" placeholder="Nouvelle catégorie..." />
+      <button id="addCategoryBtn" class="file-btn">➕</button>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <button id="closeCategoriesBtn" class="file-btn">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========== Storage model =============
+songs = {
+  song_id: {
+    title, category, genre, bpm, key, mood, tags, duration,
+    sections: [{id,type,text}], audioDataUrl, audioFilename, createdAt
+  }
+}
+categories = ['Perso','Battle',...]
+======================================*/
+
+const STORAGE_KEY = 'rap_songs_v2';
+const CAT_KEY = 'rap_categories_v2';
+
+let songs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+let categories = JSON.parse(localStorage.getItem(CAT_KEY) || '["General","Freestyle","Battle","Love"]');
+let currentSongId = null;
+let dragSrcIndex = null;
+
+/* ---------- Helpers ---------- */
+const el = id => document.getElementById(id);
+function uid(prefix='id'){return prefix+'_'+Math.random().toString(36).slice(2,10)}
+function saveAll(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(songs)); renderSongList(); }
+function saveCategories(){ localStorage.setItem(CAT_KEY, JSON.stringify(categories)); populateCategorySelect(); }
+
+/* ---------- UI renderers ---------- */
+function renderSongList(filter=''){
+  const container = el('songList'); container.innerHTML='';
+  const keys = Object.keys(songs).sort((a,b)=> (songs[b].createdAt||0)-(songs[a].createdAt||0));
+  keys.filter(k => {
+    if(!filter) return true;
+    const s = songs[k]; return (s.title||'').toLowerCase().includes(filter) || (s.tags||'').toLowerCase().includes(filter);
+  }).forEach(id=>{
+    const s = songs[id];
+    const div = document.createElement('div');
+    div.className = 'song-item'+(id===currentSongId?' active':'');
+    div.innerHTML = `<div>
+      <div style="font-weight:600">${s.title || 'Sans titre'}</div>
+      <div class="small">${s.category || ''} · ${s.genre || ''} ${s.bpm?('· '+s.bpm+' BPM'):''}</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="icon" title="Dupliquer" onclick="event.stopPropagation(); duplicateSong('${id}')">📄</button>
+      <button class="icon" title="Supprimer" onclick="event.stopPropagation(); deleteSong('${id}')">🗑️</button>
+    </div>`;
+    div.onclick = ()=>loadSong(id);
+    container.appendChild(div);
+  });
+}
+
+function populateCategorySelect(){
+  const sel = el('categorySelect'); sel.innerHTML='';
+  categories.forEach(c => {
+    const o = document.createElement('option'); o.textContent = c; o.value=c; sel.appendChild(o);
+  });
+}
+
+/* ---------- Song CRUD ---------- */
+function newSong(){
+  currentSongId = uid('song');
+  songs[currentSongId] = {
+    title: 'Nouvelle chanson', category: categories[0]||'General', genre:'Rap', bpm:'', key:'', mood:'', tags:'', duration:'',
+    sections: [{id:uid('sec'), type:'Intro', text:'Intro...'}],
+    audioDataUrl: null, audioFilename: null, createdAt: Date.now()
+  };
+  saveAll(); loadSong(currentSongId); renderSongList();
+}
+
+function loadSong(id){
+  if(!songs[id]) return;
+  currentSongId = id;
+  const s = songs[id];
+  el('songTitle').value = s.title || '';
+  el('categorySelect').value = s.category || categories[0];
+  el('genreSelect').value = s.genre || 'Rap';
+  el('bpmInput').value = s.bpm || '';
+  el('keyInput').value = s.key || '';
+  el('moodInput').value = s.mood || '';
+  el('tagsInput').value = s.tags || '';
+  el('durationInput').value = s.duration || '';
+  renderSections();
+  renderAudio();
+  renderSongList(el('search').value.trim().toLowerCase());
+}
+
+function saveSong(){
+  if(!currentSongId) newSong();
+  const s = songs[currentSongId];
+  s.title = el('songTitle').value.trim() || 'Sans titre';
+  s.category = el('categorySelect').value;
+  s.genre = el('genreSelect').value;
+  s.bpm = el('bpmInput').value;
+  s.key = el('keyInput').value;
+  s.mood = el('moodInput').value;
+  s.tags = el('tagsInput').value;
+  s.duration = el('durationInput').value;
+  // sections are already saved on the fly
+  s.updatedAt = Date.now();
+  saveAll();
+  alert('✅ Enregistré');
+}
+
+function deleteSong(id){
+  if(!confirm('Supprimer cette chanson ? Cette action est irréversible.')) return;
+  delete songs[id];
+  if(id===currentSongId) currentSongId = null;
+  saveAll();
+  if(Object.keys(songs).length) loadSong(Object.keys(songs)[0]);
+  else { clearEditor(); }
+}
+
+function duplicateSong(id){
+  const src = songs[id];
+  const nid = uid('song');
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.title = (copy.title || 'Sans titre') + ' (copie)';
+  copy.createdAt = Date.now();
+  songs[nid] = copy;
+  saveAll();
+  loadSong(nid);
+}
+
+/* ---------- Sections UI & Drag/drop ---------- */
+function renderSections(){
+  const list = el('sectionList'); list.innerHTML='';
+  if(!currentSongId) return;
+  const s = songs[currentSongId];
+  s.sections = s.sections || [];
+  s.sections.forEach((sec, idx) => {
+    const card = document.createElement('div');
+    card.className = 'section-card';
+    card.setAttribute('draggable','true');
+    card.dataset.index = idx;
+    card.innerHTML = `
+      <div class="section-header">
+        <div>
+          <select data-action="type">
+            <option ${sec.type==='Intro'?'selected':''}>Intro</option>
+            <option ${sec.type==='Couplet'?'selected':''}>Couplet</option>
+            <option ${sec.type==='Refrain'?'selected':''}>Refrain</option>
+            <option ${sec.type==='Pont'?'selected':''}>Pont</option>
+            <option ${sec.type==='Outro'?'selected':''}>Outro</option>
+            <option ${sec.type==='Adlib'?'selected':''}>Adlib</option>
+          </select>
+          <span class="small" style="margin-left:8px">· ${idx+1}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button data-action="play" class="icon" title="Jouer section">▶️</button>
+          <button data-action="delete" class="icon" title="Supprimer section">🗑️</button>
+        </div>
+      </div>
+      <textarea class="section-text" data-action="text">${sec.text || ''}</textarea>
+    `;
+    // events
+    card.querySelector('[data-action="delete"]').onclick = (e)=>{ e.stopPropagation(); s.sections.splice(idx,1); saveAll(); renderSections(); };
+    card.querySelector('[data-action="play"]').onclick = (e)=>{ e.stopPropagation(); playTextSection(sec.text); };
+    card.querySelector('[data-action="text"]').addEventListener('input', (ev)=>{ s.sections[idx].text = ev.target.value; saveAll(); });
+    card.querySelector('select').addEventListener('change', (ev)=>{ s.sections[idx].type = ev.target.value; saveAll(); renderSections(); });
+
+    // drag events
+    card.addEventListener('dragstart', (ev)=>{ dragSrcIndex = idx; card.classList.add('dragging'); ev.dataTransfer.effectAllowed='move'; });
+    card.addEventListener('dragend', ()=>{ card.classList.remove('dragging'); dragSrcIndex = null; });
+    card.addEventListener('dragover', (ev)=>{ ev.preventDefault(); ev.dataTransfer.dropEffect='move'; });
+    card.addEventListener('drop', (ev)=>{
+      ev.preventDefault();
+      const targetIndex = Number(card.dataset.index);
+      if(dragSrcIndex===null || dragSrcIndex===targetIndex) return;
+      const arr = s.sections;
+      const [moved] = arr.splice(dragSrcIndex,1);
+      arr.splice(targetIndex,0,moved);
+      saveAll();
+      renderSections();
+    });
+
+    list.appendChild(card);
+  });
+}
+
+function addSection(type){
+  if(!currentSongId) newSong();
+  const s = songs[currentSongId];
+  s.sections = s.sections || [];
+  s.sections.push({id:uid('sec'), type: type || el('newSectionType').value, text: ''});
+  saveAll(); renderSections();
+}
+
+function clearSections(){
+  if(!currentSongId) return;
+  if(!confirm('Vider toutes les sections ?')) return;
+  songs[currentSongId].sections = [];
+  saveAll(); renderSections();
+}
+
+/* ---------- Audio handling (base64 store) ---------- */
+el('audioFileInput').addEventListener('change', async (ev)=>{
+  const f = ev.target.files[0];
+  if(!f) return;
+  if(!currentSongId) newSong();
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const dataUrl = e.target.result;
+    songs[currentSongId].audioDataUrl = dataUrl;
+    songs[currentSongId].audioFilename = f.name;
+    saveAll();
+    renderAudio();
+  };
+  reader.readAsDataURL(f);
+});
+
+function renderAudio(){
+  const wrap = el('audioPlayerWrap'); const player = el('audioPlayer'); const fname = el('audioFilename');
+  const s = songs[currentSongId];
+  if(s && s.audioDataUrl){
+    wrap.style.display = 'block';
+    player.src = s.audioDataUrl;
+    fname.textContent = s.audioFilename || '';
+  } else {
+    wrap.style.display = 'none';
+    player.pause(); player.src='';
+    fname.textContent='';
+  }
+}
+
+el('removeAudioBtn').addEventListener('click', ()=>{
+  if(!currentSongId) return;
+  songs[currentSongId].audioDataUrl = null;
+  songs[currentSongId].audioFilename = null;
+  saveAll(); renderAudio();
+});
+
+/* ---------- Play text (TTS not included) - simulate by reading text via SpeechSynthesis if available ---------- */
+function playTextSection(text){
+  if(!text) return alert('Section vide.');
+  if('speechSynthesis' in window){
+    const ut = new SpeechSynthesisUtterance(text);
+    ut.rate = 1;
+    ut.lang = 'fr-FR';
+    speechSynthesis.cancel();
+    speechSynthesis.speak(ut);
+  } else alert('TTS non disponible dans ce navigateur.');
+}
+
+/* ---------- Export TXT/PDF ---------- */
+function exportCurrentTxt(){
+  if(!currentSongId) return alert('Charge une chanson d\'abord.');
+  const s = songs[currentSongId];
+  const parts = [];
+  parts.push(s.title || 'Sans titre');
+  parts.push(`${s.category || ''} · ${s.genre || ''} · ${s.bpm || ''} BPM · ${s.key || ''}`);
+  parts.push(`Mood: ${s.mood || ''} · Tags: ${s.tags || ''} · Durée: ${s.duration || ''}min`);
+  parts.push('---\n');
+  s.sections.forEach(sec => {
+    parts.push(`### ${sec.type}\n${sec.text}\n`);
+  });
+  const blob = new Blob([parts.join('\n')], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download = (s.title||'song')+'.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCurrentPdf(){
+  // Simpler: open printable window with song content; user chooses "Save as PDF"
+  if(!currentSongId) return alert('Charge une chanson d\'abord.');
+  const s = songs[currentSongId];
+  let html = `<html><head><meta charset="utf-8"><title>${s.title}</title>
+    <style>body{font-family:Arial;padding:20px;color:#111} h1{font-size:22px} pre{white-space:pre-wrap; font-size:14px}</style></head><body>`;
+  html += `<h1>${s.title}</h1>`;
+  html += `<div style="color:#666;margin-bottom:8px">${s.category||''} · ${s.genre||''} ${s.bpm?('· '+s.bpm+' BPM'):''} ${s.key?('· Key '+s.key):''}</div>`;
+  s.sections.forEach(sec=>{
+    html += `<h3>${sec.type}</h3><pre>${escapeHtml(sec.text)}</pre>`;
+  });
+  html += `</body></html>`;
+  const w = window.open('', '_blank'); w.document.write(html); w.document.close();
+  // prompt user to print/save as PDF
+  setTimeout(()=>{ w.focus(); w.print(); }, 500);
+}
+function escapeHtml(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ---------- Download all as txt ---------- */
+function downloadAllTxt(){
+  const payload = [];
+  Object.keys(songs).forEach(id=>{
+    const s = songs[id];
+    payload.push('### ' + (s.title||'Sans titre'));
+    s.sections.forEach(sec=> payload.push(`\n[${sec.type}]\n${sec.text}\n`));
+    payload.push('\n-----\n');
+  });
+  const blob = new Blob([payload.join('\n')], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='rap_notes_all.txt'; a.click();
+}
+
+/* ---------- Categories modal ---------- */
+el('manageCategoriesBtn').addEventListener('click', ()=>{ renderCategoriesModal(); el('categoriesModal').classList.add('open'); });
+el('closeCategoriesBtn').addEventListener('click', ()=> el('categoriesModal').classList.remove('open'));
+function renderCategoriesModal(){
+  const list = el('categoriesList'); list.innerHTML='';
+  categories.forEach((c, idx)=>{
+    const row = document.createElement('div');
+    row.style.display='flex'; row.style.gap='8px'; row.style.alignItems='center';
+    row.innerHTML = `<input value="${c}" data-idx="${idx}" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)"><button data-idx="${idx}" class="file-btn">🗑️</button>`;
+    list.appendChild(row);
+    row.querySelector('input').addEventListener('change', (e)=>{ categories[idx]=e.target.value; saveCategories(); });
+    row.querySelector('button').addEventListener('click', ()=>{ if(confirm('Supprimer catégorie ?')){ categories.splice(idx,1); saveCategories(); renderCategoriesModal(); }});
+  });
+}
+el('addCategoryBtn').addEventListener('click', ()=>{
+  const v = el('newCategoryInput').value.trim();
+  if(!v) return;
+  categories.push(v); el('newCategoryInput').value=''; saveCategories(); renderCategoriesModal();
+});
+
+/* ---------- Small helpers ---------- */
+function clearEditor(){
+  el('songTitle').value=''; el('categorySelect').value = categories[0]||''; el('genreSelect').value='Rap';
+  el('bpmInput').value=''; el('keyInput').value=''; el('moodInput').value=''; el('tagsInput').value=''; el('durationInput').value='';
+  el('sectionList').innerHTML=''; el('audioPlayerWrap').style.display='none';
+}
+
+/* ---------- Theme & Responsive ---------- */
+const themeBtn = el('toggleTheme');
+themeBtn.addEventListener('click', ()=>{
+  const body = document.body;
+  const curr = body.getAttribute('data-theme');
+  if(curr==='dark'){ body.setAttribute('data-theme',''); themeBtn.textContent='🌙'; }
+  else { body.setAttribute('data-theme','dark'); themeBtn.textContent='☀️'; }
+});
+el('toggleSidebar').addEventListener('click', ()=>{ const sb = el('sidebar'); sb.style.width = sb.style.width==='72px' ? '300px' : '72px'; });
+
+/* ---------- Wire buttons ---------- */
+el('newSongBtn').addEventListener('click', ()=>{ newSong(); });
+el('saveBtn').addEventListener('click', ()=> saveSong());
+el('addSectionBtn').addEventListener('click', ()=> addSection());
+el('clearSectionsBtn').addEventListener('click', ()=> clearSections());
+el('exportTxtBtn').addEventListener('click', ()=> exportCurrentTxt());
+el('exportPdfBtn').addEventListener('click', ()=> exportCurrentPdf());
+el('downloadAllTxtBtn').addEventListener('click', ()=> downloadAllTxt());
+el('deleteSongBtn').addEventListener('click', ()=>{ if(currentSongId) deleteSong(currentSongId); });
+
+el('playAllBtn').addEventListener('click', ()=>{
+  if(!currentSongId) return;
+  const s = songs[currentSongId];
+  const all = s.sections.map(x=>x.text).join('\n\n');
+  playTextSection(all);
+});
+
+el('search').addEventListener('input', ()=> renderSongList(el('search').value.trim().toLowerCase()));
+
+/* ---------- Init ---------- */
+populateCategorySelect();
+renderSongList();
+if(Object.keys(songs).length) loadSong(Object.keys(songs)[0]);
+else {
+  // create a starter
+  newSong();
+  saveSong();
+}
+
+/* ---------- Extra: autosave on unload ---------- */
+window.addEventListener('beforeunload', ()=> saveSong());
+
+</script>
+</body>
+</html>

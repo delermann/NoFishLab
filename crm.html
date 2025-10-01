@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>One‑Page CRM — Local</title>
+<style>
+:root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#06b6d4;--accent-2:#f59e0b;--glass: rgba(255,255,255,0.03);}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:linear-gradient(180deg,#071025 0%, #061622 100%);color:#e6eef6}
+.container{display:grid;grid-template-columns:320px 1fr;gap:18px;height:100vh;padding:18px}
+.sidebar{background:var(--card);border-radius:12px;padding:14px;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.logo{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:700}
+.search{display:flex;margin-bottom:8px}
+.search input{flex:1;padding:8px;border-radius:8px;border:0;background:var(--glass);color:inherit}
+.btn{background:var(--accent);border:none;padding:8px 10px;border-radius:8px;color:#042027;cursor:pointer}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+.list{flex:1;overflow:auto;margin-top:8px}
+.item{padding:8px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;background:transparent}
+.item:hover{background:rgba(255,255,255,0.02)}
+.item .name{font-weight:600}
+.topbar{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.main{padding:14px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));overflow:auto}
+.controls{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.card{background:var(--card);padding:12px;border-radius:10px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 320px;gap:12px}
+.form-row{display:flex;gap:8px;margin-bottom:8px}
+.input,textarea,select{width:100%;padding:8px;border-radius:8px;border:0;background:var(--glass);color:inherit}
+textarea{min-height:80px}
+.small{font-size:13px;color:var(--muted)}
+.tag{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.03);margin-right:6px;font-size:12px}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:8px;text-align:left;border-bottom:1px dashed rgba(255,255,255,0.02)}
+.kv{display:flex;justify-content:space-between;color:var(--muted);font-size:13px}
+.footer{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:12px;color:var(--muted)}
+.modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center}
+.modal.open{display:flex}
+.modal .box{width:min(960px,96%);background:#071428;padding:16px;border-radius:12px}
+.controls .select{padding:8px;border-radius:8px;background:var(--glass)}
+.toolbar{display:flex;gap:8px}
+.badge{background:var(--accent-2);color:#041014;padding:6px 8px;border-radius:999px;font-weight:600}
+.help{font-size:13px;color:var(--muted)}
+@media(max-width:880px){.container{grid-template-columns:1fr} .grid{grid-template-columns:1fr} .sidebar{display:none}}
+</style>
+</head>
+<body>
+<div class="container">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">CRM</div>
+      <div>
+        <div style="font-weight:700">One‑Page CRM</div>
+        <div class="small">Local • Pas de serveur</div>
+      </div>
+    </div>
+
+    <div class="search">
+      <input id="quickSearch" placeholder="Rechercher contacts / sociétés / deals" />
+      <button class="btn" id="btnNewContact">+ Contact</button>
+    </div>
+
+    <div class="topbar">
+      <div class="toolbar">
+        <button class="btn ghost" id="btnImport">Import</button>
+        <button class="btn ghost" id="btnExport">Export</button>
+      </div>
+      <div style="margin-left:auto" class="small">Items: <span id="countDisplay">0</span></div>
+    </div>
+
+    <div class="list card" id="listContacts" aria-live="polite"></div>
+
+    <div class="footer small">
+      <div>Sauvegarde: <span id="lastSaved">—</span></div>
+      <div><button class="btn ghost" id="btnReset">Reset</button></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="controls">
+      <div style="flex:1">
+        <input class="input" id="globalFilter" placeholder="Filtrer par tag, statut, entreprise..." />
+      </div>
+      <select id="viewSelect" class="select">
+        <option value="contacts">Contacts</option>
+        <option value="companies">Sociétés</option>
+        <option value="deals">Deals</option>
+        <option value="tasks">Tâches</option>
+        <option value="notes">Notes</option>
+      </select>
+      <button class="btn" id="btnNew">Nouveau</button>
+    </div>
+
+    <div class="grid">
+      <section id="mainList">
+        <!-- dynamique -->
+      </section>
+
+      <aside style="min-height:200px">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-weight:700">Détails</div>
+            <div class="small">Sélection: <span id="selCount">0</span></div>
+          </div>
+          <div id="detailPane" style="margin-top:8px" class="small">Sélectionne un item pour voir/éditer ses détails</div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:700;margin-bottom:8px">Raccourcis</div>
+          <div class="small">
+            <div>Ctrl+K — Recherche rapide</div>
+            <div>Ctrl+N — Nouveau (selon vue)</div>
+            <div>Ctrl+S — Export JSON</div>
+          </div>
+        </div>
+
+        <div class="card help">
+          <div style="font-weight:700">Aide</div>
+          <div style="margin-top:8px">Tout est stocké en local (localStorage). Tu peux exporter et importer des sauvegardes JSON/CSV. Pas besoin de serveur.</div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<!-- Modal (formulaire) -->
+<div class="modal" id="modal">
+  <div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div id="modalTitle" style="font-weight:800">Nouveau</div>
+      <div><button class="btn ghost" id="modalClose">Fermer</button></div>
+    </div>
+    <form id="modalForm">
+      <div id="formFields"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button type="button" class="btn ghost" id="btnCancel">Annuler</button>
+        <button type="submit" class="btn" id="btnSave">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// One-page CRM — stockage simple en localStorage
+const STORAGE_KEY = 'onepage_crm_v1';
+let state = {
+  contacts: [],
+  companies: [],
+  deals: [],
+  tasks: [],
+  notes: [],
+  meta: { lastSaved: null }
+};
+
+// --- utils ---
+const uid = (pref='id')=> pref + '_' + Math.random().toString(36).slice(2,9);
+const nowISO = ()=> new Date().toISOString();
+const save = ()=>{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); state.meta.lastSaved = nowISO(); document.getElementById('lastSaved').textContent = (new Date()).toLocaleString(); renderList(); };
+const load = ()=>{ const raw = localStorage.getItem(STORAGE_KEY); if(raw){ try{ state = JSON.parse(raw); }catch(e){ console.error('load error',e); } } else { seedDemo(); save(); } document.getElementById('lastSaved').textContent = state.meta.lastSaved ? new Date(state.meta.lastSaved).toLocaleString() : '—'; };
+const resetAll = ()=>{ if(!confirm('Supprimer toutes les données locales ?')) return; localStorage.removeItem(STORAGE_KEY); state = { contacts:[],companies:[],deals:[],tasks:[],notes:[],meta:{lastSaved:null}}; save(); };
+
+// --- demo data ---
+function seedDemo(){ state.contacts = [ {id:uid('c'),first:'Alice',last:'Martin',email:'alice@example.com',phone:'0612345678',companyId:null,tags:['lead'],notes:[],created:nowISO()}, {id:uid('c'),first:'Bob',last:'Durand',email:'bob@example.com',phone:'0678123456',companyId:null,tags:['client'],notes:[],created:nowISO()} ];
+  state.companies = [ {id:uid('co'),name:'ACME SARL',website:'acme.local',tags:['fournisseur'],created:nowISO()} ];
+  state.deals = [ {id:uid('d'),title:'Contrat ACME',value:4200,stage:'Prospection',contactId:state.contacts[0].id,companyId:state.companies[0].id,created:nowISO()} ];
+  state.tasks = [ {id:uid('t'),title:'Relancer Bob',due:new Date(Date.now()+86400000).toISOString(),done:false,linkedTo:state.contacts[1].id,created:nowISO()} ];
+  state.notes = [ {id:uid('n'),title:'Note projet',body:'Réfléchir à l intégration',created:nowISO()} ];
+}
+
+// --- render lists by view ---
+const listContactsEl = document.getElementById('listContacts');
+const mainList = document.getElementById('mainList');
+function renderList(){
+  // sidebar compact contacts
+  listContactsEl.innerHTML = '';
+  state.contacts.slice(0,200).forEach(c=>{
+    const el = document.createElement('div'); el.className='item';
+    el.innerHTML = `<div><div class='name'>${escapeHtml(c.first||'') + ' ' + escapeHtml(c.last||'')}</div><div class='small'>${escapeHtml(c.email||'')} ${c.phone? '• '+escapeHtml(c.phone):''}</div></div>`;
+    el.onclick = ()=> selectItem('contacts', c.id);
+    listContactsEl.appendChild(el);
+  });
+  document.getElementById('countDisplay').textContent = state.contacts.length + ' contacts';
+
+  // main view
+  const view = document.getElementById('viewSelect').value;
+  mainList.innerHTML = '';
+  if(view==='contacts') renderContactsMain();
+  if(view==='companies') renderCompaniesMain();
+  if(view==='deals') renderDealsMain();
+  if(view==='tasks') renderTasksMain();
+  if(view==='notes') renderNotesMain();
+}
+
+function renderContactsMain(){
+  const card = document.createElement('div'); card.className='card';
+  const table = document.createElement('table'); table.className='table';
+  table.innerHTML = `<thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Tags</th><th></th></tr></thead>`;
+  const tbody = document.createElement('tbody');
+  state.contacts.forEach(c=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml((c.first||'')+' '+(c.last||''))}</td><td>${escapeHtml(c.email||'')}</td><td>${escapeHtml(c.phone||'')}</td><td>${(c.tags||[]).map(t=>`<span class='tag'>${escapeHtml(t)}</span>`).join('')}</td><td><button class='btn ghost' data-id='${c.id}'>Edit</button></td>`;
+    tr.querySelector('button').onclick = ()=> openEdit('contacts', c.id);
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody); card.appendChild(table); mainList.appendChild(card);
+}
+function renderCompaniesMain(){
+  const card=document.createElement('div');card.className='card';
+  const table=document.createElement('table');table.className='table';table.innerHTML=`<thead><tr><th>Société</th><th>Site</th><th>Tags</th><th></th></tr></thead>`;
+  const tbody=document.createElement('tbody'); state.companies.forEach(co=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${escapeHtml(co.name)}</td><td>${escapeHtml(co.website||'')}</td><td>${(co.tags||[]).map(t=>`<span class='tag'>${escapeHtml(t)}</span>`).join('')}</td><td><button class='btn ghost' data-id='${co.id}'>Edit</button></td>`; tr.querySelector('button').onclick=()=> openEdit('companies',co.id); tbody.appendChild(tr);}); table.appendChild(tbody); card.appendChild(table); mainList.appendChild(card);
+}
+function renderDealsMain(){
+  const card=document.createElement('div');card.className='card';
+  const table=document.createElement('table');table.className='table';table.innerHTML=`<thead><tr><th>Deal</th><th>Montant</th><th>Stage</th><th>Contact</th><th></th></tr></thead>`;
+  const tbody=document.createElement('tbody'); state.deals.forEach(d=>{const tr=document.createElement('tr');const contact = state.contacts.find(x=>x.id===d.contactId); tr.innerHTML=`<td>${escapeHtml(d.title)}</td><td>${d.value||0}€</td><td>${escapeHtml(d.stage||'')}</td><td>${contact?escapeHtml(contact.first+' '+contact.last):''}</td><td><button class='btn ghost' data-id='${d.id}'>Edit</button></td>`; tr.querySelector('button').onclick=()=> openEdit('deals',d.id); tbody.appendChild(tr);}); table.appendChild(tbody); card.appendChild(table); mainList.appendChild(card);
+}
+function renderTasksMain(){
+  const card=document.createElement('div');card.className='card';
+  const table=document.createElement('table');table.className='table';table.innerHTML=`<thead><tr><th>Tâche</th><th>Due</th><th>Statut</th><th></th></tr></thead>`;
+  const tbody=document.createElement('tbody'); state.tasks.forEach(t=>{const tr=document.createElement('tr'); tr.innerHTML=`<td>${escapeHtml(t.title)}</td><td>${t.due?new Date(t.due).toLocaleString():''}</td><td>${t.done? 'Done':'Open'}</td><td><button class='btn ghost' data-id='${t.id}'>Edit</button></td>`; tr.querySelector('button').onclick=()=> openEdit('tasks',t.id); tbody.appendChild(tr);}); table.appendChild(tbody); card.appendChild(table); mainList.appendChild(card);
+}
+function renderNotesMain(){
+  const card=document.createElement('div');card.className='card'; state.notes.forEach(n=>{const ndiv=document.createElement('div');ndiv.style.marginBottom='8px';ndiv.innerHTML=`<div style='font-weight:700'>${escapeHtml(n.title)}</div><div class='small'>${new Date(n.created).toLocaleString()}</div><div style='margin-top:6px'>${escapeHtml(n.body)}</div><div style='text-align:right'><button class='btn ghost' data-id='${n.id}'>Edit</button></div>`; ndiv.querySelector('button').onclick=()=> openEdit('notes',n.id); card.appendChild(ndiv);} ); mainList.appendChild(card);
+}
+
+// --- select & detail ---
+let selected = {type:null,id:null};
+function selectItem(type,id){ selected = {type,id}; document.getElementById('selCount').textContent = '1'; showDetails(type,id); }
+function showDetails(type,id){ const pane = document.getElementById('detailPane'); pane.innerHTML = '';
+  const item = (state[type]||[]).find(x=>x.id===id); if(!item){pane.textContent='Rien'; return}
+  const pre = document.createElement('div'); pre.innerHTML = `<div style='font-weight:700'>${escapeHtml(item.name || item.title || (item.first+' '+item.last)||'')}</div><div class='kv'><div>Créé</div><div>${new Date(item.created).toLocaleString()}</div></div>`;
+  const btns = document.createElement('div'); btns.style.marginTop='8px'; btns.innerHTML = `<button class='btn' id='btnEditDetail'>Éditer</button> <button class='btn ghost' id='btnDeleteDetail'>Supprimer</button>`;
+  pane.appendChild(pre); pane.appendChild(btns);
+  document.getElementById('btnEditDetail').onclick = ()=> openEdit(type,id);
+  document.getElementById('btnDeleteDetail').onclick = ()=>{ if(confirm('Supprimer ?')){ state[type]=state[type].filter(x=>x.id!==id); save(); } };
+}
+
+// --- edit / modal ---
+const modal = document.getElementById('modal'); const modalTitle = document.getElementById('modalTitle'); const formFields = document.getElementById('formFields');
+function openEdit(type,id){ const data = id ? (state[type]||[]).find(x=>x.id===id) : null; openModal(type,data); }
+function openModal(type,data){ modal.classList.add('open'); modalTitle.textContent = (data? 'Modifier ':'Nouveau ') + type.slice(0,-1);
+  formFields.innerHTML = '';
+  const fields = getFormSchemaFor(type);
+  fields.forEach(f=>{
+    const wrap = document.createElement('div'); wrap.style.marginBottom='8px';
+    if(f.type==='textarea') wrap.innerHTML = `<label class='small'>${f.label}</label><textarea name='${f.key}' class='input'>${data?escapeHtml(data[f.key]||''):''}</textarea>`;
+    else wrap.innerHTML = `<label class='small'>${f.label}</label><input name='${f.key}' class='input' value='${data?escapeHtml(data[f.key]||''):''}' />`;
+    formFields.appendChild(wrap);
+  });
+  const form = document.getElementById('modalForm'); form.onsubmit = (e)=>{ e.preventDefault(); const fd = new FormData(form); const obj = {}; fields.forEach(f=>{ obj[f.key] = fd.get(f.key) }); if(data){ // update
+      Object.assign(data, obj); data.updated = nowISO();
+    } else { const id = uid(type.slice(0,1)); obj.id = id; obj.created = nowISO(); state[type].push(obj); }
+    save(); closeModal(); };
+}
+function closeModal(){ modal.classList.remove('open'); }
+function getFormSchemaFor(type){ if(type==='contacts') return [ {key:'first',label:'Prénom'},{key:'last',label:'Nom'},{key:'email',label:'Email'},{key:'phone',label:'Téléphone'},{key:'companyId',label:'Société (id)'},{key:'tags',label:'Tags (virgule)'} ];
+  if(type==='companies') return [{key:'name',label:'Nom'},{key:'website',label:'Site web'},{key:'tags',label:'Tags (virgule)'}];
+  if(type==='deals') return [{key:'title',label:'Titre'},{key:'value',label:'Montant (nombre)'},{key:'stage',label:'Stage (Prospection, Négociation, Gagné)'},{key:'contactId',label:'Contact id'},{key:'companyId',label:'Company id'}];
+  if(type==='tasks') return [{key:'title',label:'Titre'},{key:'due',label:'Échéance (YYYY-MM-DD HH:MM)'},{key:'done',label:'Fait (true/false)'},{key:'linkedTo',label:'Lié à (id)'}];
+  if(type==='notes') return [{key:'title',label:'Titre'},{key:'body',label:'Texte',type:'textarea'}];
+  return [];
+}
+
+// --- import/export ---
+function exportJSON(){ const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='crm_backup_'+(new Date().toISOString().slice(0,19))+'.json'; a.click(); URL.revokeObjectURL(url); }
+function importJSONFile(file){ const reader = new FileReader(); reader.onload = ()=>{ try{ const j = JSON.parse(reader.result); if(confirm('Remplacer la base locale par le fichier importé ? (Annuler pour fusionner)')){ state = j; } else { // fusion (simple concat sans duplicates)
+        ['contacts','companies','deals','tasks','notes'].forEach(k=>{ state[k] = (state[k]||[]).concat((j[k]||[])); });
+      } save(); alert('Import OK'); }catch(e){ alert('Erreur JSON'); }}; reader.readAsText(file);
+}
+function exportCSV(kind){ const arr = state[kind]||[]; if(!arr.length){ alert('Aucun élément'); return; } const keys = Object.keys(arr[0]); const rows = [keys.join(',')].concat(arr.map(o=>keys.map(k=>`"${String(o[k]||'').replace(/"/g,'""')}"`).join(','))); const blob = new Blob([rows.join('\n')],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`crm_${kind}_${new Date().toISOString().slice(0,10)}.csv`; a.click(); }
+
+// --- helpers ---
+function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
+
+// --- events ---
+document.getElementById('btnNewContact').onclick = ()=> openModal('contacts',null);
+document.getElementById('viewSelect').onchange = renderList;
+document.getElementById('btnNew').onclick = ()=> { const view = document.getElementById('viewSelect').value; openModal(view,null); };
+document.getElementById('modalClose').onclick = closeModal; document.getElementById('btnCancel').onclick = closeModal;
+document.getElementById('btnExport').onclick = ()=> exportJSON();
+document.getElementById('btnImport').onclick = ()=>{ const inp = document.createElement('input'); inp.type='file'; inp.accept='.json,.csv'; inp.onchange = ()=>{ const f = inp.files[0]; if(!f) return; if(f.name.endsWith('.json')) importJSONFile(f); else { alert('Import CSV non supporté directement; convertis en JSON.'); } }; inp.click(); };
+document.getElementById('btnReset').onclick = resetAll;
+
+// keyboard shortcuts
+window.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); document.getElementById('quickSearch').focus(); }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='n'){ e.preventDefault(); document.getElementById('btnNew').click(); }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); exportJSON(); }
+});
+
+// search
+document.getElementById('quickSearch').oninput = function(){ const q=this.value.toLowerCase(); if(!q) return renderList(); const found = state.contacts.filter(c=> (c.first+' '+c.last+' '+(c.email||'')+' '+(c.phone||'')).toLowerCase().includes(q)); listContactsEl.innerHTML=''; found.forEach(c=>{ const el=document.createElement('div'); el.className='item'; el.innerHTML=`<div><div class='name'>${escapeHtml(c.first+' '+c.last)}</div><div class='small'>${escapeHtml(c.email||'')}</div></div>`; el.onclick=()=> selectItem('contacts',c.id); listContactsEl.appendChild(el); }); };
+
+// init
+load(); renderList();
+</script>
+</body>
+</html>

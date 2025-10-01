@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Compteur Cyberpunk Avancé</title>
+<style>
+  /* Centrer tout le contenu */
+  body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #0a0a0a;
+    font-family: 'Courier New', Courier, monospace;
+    color: #0ff;
+    overflow: hidden;
+  }
+
+  /* Boîte du compteur style écran digital */
+  #compteur {
+    font-size: 5em;
+    padding: 40px 60px;
+    background: linear-gradient(145deg, #0ff, #0ff0);
+    border: 3px solid #ff00ff;
+    border-radius: 20px;
+    box-shadow:
+      0 0 20px #0ff,
+      0 0 40px #0ff,
+      0 0 60px #ff00ff,
+      0 0 80px #ff00ff inset;
+    text-align: center;
+    margin-bottom: 50px;
+    letter-spacing: 5px;
+    position: relative;
+    animation: flicker 1.5s infinite;
+  }
+
+  /* Effet glitch du compteur */
+  @keyframes glitch {
+    0% { text-shadow: 2px 0 #ff00ff, -2px 0 #00ffff; }
+    20% { text-shadow: -2px 0 #ff00ff, 2px 0 #00ffff; }
+    40% { text-shadow: 2px 0 #ff00ff, -2px 0 #00ffff; }
+    60% { text-shadow: -2px 0 #ff00ff, 2px 0 #00ffff; }
+    80% { text-shadow: 2px 0 #ff00ff, -2px 0 #00ffff; }
+    100% { text-shadow: 0 0 #fff; }
+  }
+
+  #compteur.glitch {
+    animation: glitch 0.3s infinite;
+  }
+
+  /* Effet clignotement LED */
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+  }
+
+  /* Boutons stylés cyberpunk avec animation néon */
+  .bouton {
+    background: linear-gradient(45deg, #ff00ff, #00ffff);
+    border: none;
+    color: #fff;
+    font-size: 2em;
+    padding: 20px 40px;
+    margin: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 0 10px #ff00ff, 0 0 20px #00ffff inset;
+    transition: all 0.2s ease-in-out;
+    position: relative;
+  }
+
+  .bouton:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 5px #ff00ff, 0 0 10px #00ffff inset;
+  }
+
+  /* Animation néon autour des boutons */
+  .bouton::before {
+    content: '';
+    position: absolute;
+    top: -5px; left: -5px;
+    width: calc(100% + 10px);
+    height: calc(100% + 10px);
+    border-radius: 14px;
+    background: linear-gradient(45deg, #ff00ff, #00ffff, #ff00ff, #00ffff);
+    z-index: -1;
+    filter: blur(8px);
+    opacity: 0.7;
+    animation: neonGlow 1.5s infinite linear;
+  }
+
+  @keyframes neonGlow {
+    0% { filter: blur(5px) brightness(1); }
+    50% { filter: blur(12px) brightness(1.3); }
+    100% { filter: blur(5px) brightness(1); }
+  }
+
+  /* Conteneur boutons */
+  .buttons {
+    display: flex;
+    justify-content: center;
+  }
+
+</style>
+</head>
+<body>
+
+<h1 id="compteur">0</h1>
+
+<div class="buttons">
+  <button id="plus" class="bouton">+</button>
+  <button id="moins" class="bouton">-</button>
+</div>
+
+<script>
+  // Variable compteur
+  let compteur = 0;
+
+  // Récupération des éléments HTML
+  const compteurElement = document.getElementById("compteur");
+  const boutonPlus = document.getElementById("plus");
+  const boutonMoins = document.getElementById("moins");
+
+  // Affichage initial
+  compteurElement.textContent = compteur;
+
+  // Fonction pour appliquer effet glitch temporaire
+  function glitchEffect() {
+    compteurElement.classList.add("glitch");
+    setTimeout(() => compteurElement.classList.remove("glitch"), 300);
+  }
+
+  // Incrémenter le compteur
+  boutonPlus.addEventListener("click", () => {
+    compteur++;
+    compteurElement.textContent = compteur;
+    glitchEffect(); // effet glitch à chaque clic
+  });
+
+  // Décrémenter le compteur
+  boutonMoins.addEventListener("click", () => {
+    compteur--;
+    compteurElement.textContent = compteur;
+    glitchEffect(); // effet glitch à chaque clic
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Pierre - Feuille - Ciseaux</title>
+  <style>
+    /* Mise en page générale */
+    body {
+      font-family: Arial, sans-serif;
+      display: flex; /* On centre le contenu */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh; /* Hauteur totale de la fenêtre */
+      background: #f0f0f0;
+      margin: 0;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    /* Conteneur pour les boutons */
+    .choices {
+      display: flex;
+      gap: 15px; /* Espace entre les boutons */
+      margin-bottom: 20px;
+    }
+
+    /* Style des boutons */
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 8px;
+      border: none;
+      background: #3498db;
+      color: white;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    /* Zone d'affichage du résultat */
+    .result {
+      font-size: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Jeu : Pierre - Feuille - Ciseaux</h1>
+
+  <!-- Boutons pour que le joueur choisisse -->
+  <div class="choices">
+    <button id="pierre">Pierre</button>
+    <button id="feuille">Feuille</button>
+    <button id="ciseaux">Ciseaux</button>
+  </div>
+
+  <!-- Zone où on affichera le résultat -->
+  <div class="result" id="resultat">Faites votre choix !</div>
+
+  <script>
+    // Récupération des boutons dans le DOM
+    const boutonPierre = document.getElementById("pierre");
+    const boutonFeuille = document.getElementById("feuille");
+    const boutonCiseaux = document.getElementById("ciseaux");
+
+    // Récupération de la zone d'affichage du résultat
+    const resultat = document.getElementById("resultat");
+
+    // Fonction qui génère le choix de l'ordinateur aléatoirement
+    function choixOrdinateur() {
+      // Math.random() génère un nombre entre 0 et 1
+      const random = Math.random();
+
+      // On divise en 3 intervalles égaux pour les 3 choix
+      if (random < 0.33) {
+        return "pierre";
+      } else if (random < 0.66) {
+        return "feuille";
+      } else {
+        return "ciseaux";
+      }
+    }
+
+    // Fonction qui détermine le gagnant
+    function determinerGagnant(joueur, ordinateur) {
+      // Si les deux choix sont identiques → égalité
+      if (joueur === ordinateur) {
+        return "Égalité ! Vous avez tous les deux choisi " + joueur;
+      }
+
+      // Cas où le joueur gagne
+      if (
+        (joueur === "pierre" && ordinateur === "ciseaux") ||
+        (joueur === "feuille" && ordinateur === "pierre") ||
+        (joueur === "ciseaux" && ordinateur === "feuille")
+      ) {
+        return "Vous gagnez ! " + joueur + " bat " + ordinateur;
+      }
+
+      // Sinon → l'ordinateur gagne
+      return "Vous perdez... " + ordinateur + " bat " + joueur;
+    }
+
+    // Fonction principale qui se lance quand le joueur clique sur un bouton
+    function jouer(choixJoueur) {
+      // L'ordinateur choisit
+      const choixOrdi = choixOrdinateur();
+
+      // On détermine le résultat en comparant les choix
+      const message = determinerGagnant(choixJoueur, choixOrdi);
+
+      // On affiche le résultat dans le DOM
+      resultat.textContent = "Ordinateur : " + choixOrdi + " | " + message;
+    }
+
+    // Ajout des événements sur chaque bouton
+    boutonPierre.addEventListener("click", () => jouer("pierre"));
+    boutonFeuille.addEventListener("click", () => jouer("feuille"));
+    boutonCiseaux.addEventListener("click", () => jouer("ciseaux"));
+  </script>
+</body>
+</html>

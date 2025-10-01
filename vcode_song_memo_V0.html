@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Rap Notes — Studio 🎤</title>
+<style>
+  :root{
+    --bg:#f5f3ef;
+    --panel:#faf8f5;
+    --card:#fffdf9;
+    --muted:#867e74;
+    --accent:#cfc7b8;
+    --text:#222;
+    --border: rgba(0,0,0,0.06);
+    --danger:#d9534f;
+    --slider-track:#e9e5db;
+    --slider-fill:#cfc7b8;
+    --slider-knob:#fff;
+  }
+  [data-theme="dark"]{
+    --bg:#0f1112;
+    --panel:#151617;
+    --card:#0b0d0e;
+    --muted:#9aa0a6;
+    --accent:#2b2f32;
+    --text:#e7e7e7;
+    --border: rgba(255,255,255,0.06);
+    --danger:#ff6b6b;
+    --slider-track:#222425;
+    --slider-fill:#3a3f43;
+    --slider-knob:#111214;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; height:100vh; display:flex; font-family:Inter, "Segoe UI", Roboto, Arial;
+    background:var(--bg); color:var(--text);
+  }
+
+  /* Sidebar */
+  #sidebar{
+    width:300px; background:var(--panel); border-right:1px solid var(--border);
+    display:flex; flex-direction:column;
+  }
+  #sidebar .top{padding:14px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border)}
+  #appTitle{font-weight:700; font-size:18px}
+  #newBtn{padding:8px 10px; border-radius:8px; background:linear-gradient(0deg,#e9e5db,#e6e1d8); border:1px solid var(--border); cursor:pointer}
+
+  #songList{flex:1; overflow:auto}
+  .song-item{padding:12px 14px; border-bottom:1px solid var(--border); cursor:pointer; display:flex; justify-content:space-between; align-items:center}
+  .song-item:hover{background:rgba(0,0,0,0.02)}
+  .song-item.active{background:linear-gradient(90deg,rgba(0,0,0,0.03),transparent); font-weight:600}
+  .progress-badge{
+    font-size:12px; padding:4px 8px; border-radius:999px; background:rgba(0,0,0,0.06); color:var(--text);
+    min-width:44px; text-align:center; font-weight:700;
+  }
+
+  /* Editor */
+  #editor{flex:1; display:flex; flex-direction:column; min-width:0}
+  #editor-topbar{display:flex; gap:10px; align-items:center; padding:12px 18px; border-bottom:1px solid var(--border); background:var(--panel)}
+  #titleInput{flex:1; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:var(--card); font-size:18px; outline:none}
+
+  select, input[type="number"], input[type="text"]{
+    padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--card); outline:none;
+  }
+  .small{font-size:13px; color:var(--muted)}
+
+  /* Action buttons */
+  .btn {padding:8px 10px; border-radius:8px; border:none; cursor:pointer; background:transparent}
+  .btn.primary{background:var(--accent)}
+  .btn.danger{background:var(--danger); color:white}
+
+  /* Main writing area (full height) */
+  #mainArea{display:flex; padding:18px; gap:18px; align-items:flex-start; overflow:auto}
+  #editorPanel{flex:1; background:var(--card); padding:12px; border-radius:12px; box-shadow: 0 6px 18px rgba(0,0,0,0.03); min-width:0}
+  #metaRow{display:flex; gap:8px; align-items:center; margin-bottom:8px}
+  #audioWrap{display:flex; gap:8px; align-items:center; margin-top:8px}
+
+  textarea#content{
+    width:100%; height:64vh; padding:20px; font-size:16px; line-height:1.5; border-radius:10px;
+    border:1px solid var(--border); resize:vertical; background:transparent; color:var(--text); outline:none;
+  }
+
+  /* Progress slider area */
+  .progress-area{margin-top:12px; display:flex; align-items:center; gap:12px}
+  .progress-label{font-weight:600; min-width:100px}
+  .progress-value{font-weight:700; min-width:44px; text-align:right}
+
+  /* Slider style (modern) */
+  input[type=range]{
+    -webkit-appearance:none; width:100%; height:14px; background:transparent; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:10px; border-radius:999px; background:var(--slider-track);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; margin-top:-6px; width:22px; height:22px; border-radius:50%;
+    background:var(--slider-knob); box-shadow:0 4px 8px rgba(0,0,0,0.12);
+    border:4px solid var(--slider-fill);
+  }
+  /* Firefox */
+  input[type=range]::-moz-range-track{ height:10px; border-radius:999px; background:var(--slider-track); }
+  input[type=range]::-moz-range-thumb{ width:22px; height:22px; border-radius:50%; background:var(--slider-knob); border:4px solid var(--slider-fill); }
+
+  /* small right column for info/actions */
+  #infoCol{width:320px; min-width:220px; max-width:36%; display:flex; flex-direction:column; gap:12px}
+  .card{background:var(--card); padding:12px; border-radius:10px; border:1px solid var(--border)}
+
+  /* categories modal */
+  .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.4)}
+  .modal.open{display:flex}
+  .modalCard{background:var(--card); padding:18px; border-radius:10px; width:90%; max-width:520px; border:1px solid var(--border)}
+
+  /* responsive */
+  @media (max-width:900px){
+    #sidebar{width:72px}
+    #appTitle{display:none}
+    #mainArea{padding:12px}
+    #infoCol{display:none}
+    #titleInput{font-size:16px}
+    .progress-label{display:none}
+  }
+</style>
+</head>
+<body data-theme="">
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="top">
+    <div id="appTitle">🎧 Rap Notes</div>
+    <button id="themeToggle" class="btn" title="Dark / Light">🌙</button>
+  </div>
+
+  <div style="padding:12px;border-bottom:1px solid var(--border)">
+    <div style="display:flex;gap:8px">
+      <button id="newBtn" title="Nouvelle note">➕ Nouvelle</button>
+      <button id="manageCatsBtn" class="btn" title="Gérer catégories">⚙️</button>
+    </div>
+    <div style="margin-top:10px">
+      <input id="search" placeholder="Rechercher... 🔎" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:transparent; outline:none" />
+    </div>
+  </div>
+
+  <div id="songList"></div>
+</div>
+
+<!-- EDITOR -->
+<div id="editor">
+  <div id="editor-topbar">
+    <input id="titleInput" placeholder="Titre de la chanson... 🎶" />
+    <select id="categorySelect" title="Catégorie"></select>
+    <select id="genreSelect" title="Genre">
+      <option>Rap</option><option>Trap</option><option>BoomBap</option><option>Drill</option><option>Lo-Fi</option><option>R&B</option><option>Autre</option>
+    </select>
+    <button id="saveBtn" class="btn primary">💾 Enregistrer</button>
+    <button id="exportTxtBtn" class="btn" title="Exporter TXT">📄 TXT</button>
+    <button id="exportPdfBtn" class="btn" title="Exporter PDF">🖨️ PDF</button>
+    <button id="deleteBtn" class="btn danger" title="Supprimer">🗑️</button>
+  </div>
+
+  <div id="mainArea">
+    <div id="editorPanel">
+      <div id="metaRow">
+        <div class="small">Genre • Catégorie • Instru</div>
+      </div>
+
+      <!-- Slider sous le titre (emplacement demandé) -->
+      <div class="progress-area">
+        <div class="progress-label">Progression</div>
+        <input id="progressSlider" type="range" min="0" max="100" value="0" />
+        <div class="progress-value" id="progressValue">0%</div>
+      </div>
+
+      <textarea id="content" placeholder="Écris ton texte ici..."></textarea>
+
+      <div id="audioWrap">
+        <label class="btn" for="audioInput">⬆️ Choisir instru (mp3)</label>
+        <input id="audioInput" type="file" accept="audio/*" style="display:none" />
+        <button id="removeAudio" class="btn">❌ Retirer instru</button>
+        <div id="audioPlayerContainer" style="flex:1"></div>
+      </div>
+    </div>
+
+    <div id="infoCol">
+      <div class="card">
+        <div style="font-weight:700">Infos</div>
+        <div class="small" style="margin-top:8px">Titres sauvegardés localement dans ton navigateur (localStorage). L'instru est stockée en base64 — attention au quota navigateur.</div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:700">Variables</div>
+        <div style="margin-top:8px">
+          <label class="small">BPM</label>
+          <input id="bpm" type="number" min="40" max="240" placeholder="ex: 90" style="width:100%" />
+          <label class="small" style="margin-top:8px">Key</label>
+          <input id="key" placeholder="ex: Am" style="width:100%" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:700">Actions rapides</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="downloadAllBtn" class="btn">📥 Télécharger tout (TXT)</button>
+          <button id="clearBtn" class="btn">🧽 Nouvelle / Vider</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Categories modal -->
+<div class="modal" id="catModal">
+  <div class="modalCard">
+    <h3>Gérer catégories</h3>
+    <div id="catList" style="margin-top:10px; display:flex; flex-direction:column; gap:8px"></div>
+    <div style="display:flex;gap:8px; margin-top:12px">
+      <input id="newCatInput" placeholder="Nouvelle catégorie..." style="flex:1; padding:8px; border-radius:8px; border:1px solid var(--border)" />
+      <button id="addCatBtn" class="btn">➕</button>
+      <button id="closeCatBtn" class="btn">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Storage keys */
+const KEY = 'rap_notes_slider_v1';
+const CAT_KEY = 'rap_notes_slider_categories_v1';
+
+/* State */
+let notes = JSON.parse(localStorage.getItem(KEY) || '{}');
+let categories = JSON.parse(localStorage.getItem(CAT_KEY) || '["Perso","Freestyle","Battle"]');
+let currentId = null;
+
+/* Elements */
+const songList = document.getElementById('songList');
+const newBtn = document.getElementById('newBtn');
+const titleInput = document.getElementById('titleInput');
+const content = document.getElementById('content');
+const saveBtn = document.getElementById('saveBtn');
+const exportTxtBtn = document.getElementById('exportTxtBtn');
+const exportPdfBtn = document.getElementById('exportPdfBtn');
+const deleteBtn = document.getElementById('deleteBtn');
+const categorySelect = document.getElementById('categorySelect');
+const manageCatsBtn = document.getElementById('manageCatsBtn');
+const catModal = document.getElementById('catModal');
+const catList = document.getElementById('catList');
+const newCatInput = document.getElementById('newCatInput');
+const addCatBtn = document.getElementById('addCatBtn');
+const closeCatBtn = document.getElementById('closeCatBtn');
+const genreSelect = document.getElementById('genreSelect');
+const audioInput = document.getElementById('audioInput');
+const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+const removeAudio = document.getElementById('removeAudio');
+const bpmInput = document.getElementById('bpm');
+const keyInput = document.getElementById('key');
+const downloadAllBtn = document.getElementById('downloadAllBtn');
+const clearBtn = document.getElementById('clearBtn');
+const themeToggle = document.getElementById('themeToggle');
+const searchInput = document.getElementById('search');
+const progressSlider = document.getElementById('progressSlider');
+const progressValue = document.getElementById('progressValue');
+
+/* Helpers */
+const uid = (p='id') => p+'_'+Math.random().toString(36).slice(2,9);
+function persist(){ localStorage.setItem(KEY, JSON.stringify(notes)); }
+function persistCats(){ localStorage.setItem(CAT_KEY, JSON.stringify(categories)); populateCategories(); }
+
+/* Render list */
+function renderList(filter=''){
+  songList.innerHTML = '';
+  const keys = Object.keys(notes).sort((a,b)=> (notes[b].updatedAt||notes[b].createdAt) - (notes[a].updatedAt||notes[a].createdAt));
+  keys.filter(k=> {
+    if(!filter) return true;
+    const s = notes[k];
+    return (s.title||'').toLowerCase().includes(filter) || (s.content||'').toLowerCase().includes(filter) || (s.tags||'').toLowerCase().includes(filter);
+  }).forEach(id=>{
+    const s = notes[id];
+    const d = document.createElement('div');
+    d.className = 'song-item' + (id===currentId ? ' active' : '');
+    const pct = typeof s.progress === 'number' ? s.progress : 0;
+    d.innerHTML = `<div style="min-width:0">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div style="flex:1; min-width:0">
+          <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(s.title || 'Sans titre')}</div>
+          <div class="small">${escapeHtml(s.category || '')} · ${escapeHtml(s.genre || '')} ${s.bpm?('· '+escapeHtml(String(s.bpm))+' BPM'):''}</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="progress-badge">${pct}%</div>
+      <button class="btn" title="Dupliquer" onclick="event.stopPropagation(); duplicateNote('${id}')">📄</button>
+      <button class="btn" title="Supprimer" onclick="event.stopPropagation(); confirmDelete('${id}')">🗑️</button>
+    </div>`;
+    d.onclick = ()=> loadNote(id);
+    songList.appendChild(d);
+  });
+}
+
+/* Categories */
+function populateCategories(){
+  categorySelect.innerHTML='';
+  categories.forEach(c=>{
+    const o = document.createElement('option'); o.value=c; o.textContent=c; categorySelect.appendChild(o);
+  });
+}
+function renderCatModal(){
+  catList.innerHTML='';
+  categories.forEach((c, i)=>{
+    const row = document.createElement('div');
+    row.style.display='flex'; row.style.gap='8px'; row.style.alignItems='center';
+    row.innerHTML = `<input value="${c}" data-i="${i}" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border)"><button class="btn" data-i="${i}">🗑️</button>`;
+    catList.appendChild(row);
+    row.querySelector('input').addEventListener('change', e=>{ categories[e.target.dataset.i] = e.target.value; persistCats(); });
+    row.querySelector('button').addEventListener('click', e=>{ if(confirm('Supprimer catégorie ?')){ categories.splice(e.target.dataset.i,1); persistCats(); renderCatModal(); }});
+  });
+}
+
+/* Note CRUD */
+function newNote(){
+  const id = uid('note');
+  notes[id] = {
+    title: 'Nouvelle chanson',
+    content: '',
+    category: categories[0] || 'Perso',
+    genre: 'Rap',
+    bpm: '',
+    key: '',
+    audioDataUrl: null,
+    audioFilename: null,
+    progress: 0,
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+  persist();
+  renderList();
+  loadNote(id);
+}
+function loadNote(id){
+  if(!notes[id]) return;
+  currentId = id;
+  const s = notes[id];
+  titleInput.value = s.title || '';
+  content.value = s.content || '';
+  categorySelect.value = s.category || categories[0];
+  genreSelect.value = s.genre || 'Rap';
+  bpmInput.value = s.bpm || '';
+  keyInput.value = s.key || '';
+  progressSlider.value = (typeof s.progress === 'number') ? s.progress : 0;
+  progressValue.textContent = (progressSlider.value|0) + '%';
+  renderAudio();
+  renderList(searchInput.value.trim().toLowerCase());
+}
+function saveNote(){
+  if(!currentId) { newNote(); return; }
+  const s = notes[currentId];
+  s.title = titleInput.value.trim() || 'Sans titre';
+  s.content = content.value;
+  s.category = categorySelect.value;
+  s.genre = genreSelect.value;
+  s.bpm = bpmInput.value;
+  s.key = keyInput.value;
+  s.progress = Number(progressSlider.value) || 0;
+  s.updatedAt = Date.now();
+  persist();
+  renderList();
+  saveBtn.textContent = '✅ Enregistré';
+  setTimeout(()=> saveBtn.textContent = '💾 Enregistrer', 900);
+}
+function confirmDelete(id){
+  if(!confirm('Supprimer définitivement ?')) return;
+  delete notes[id];
+  if(currentId === id) currentId = null;
+  persist();
+  renderList();
+  const keys = Object.keys(notes);
+  if(keys.length) loadNote(keys[0]);
+  else newNote();
+}
+function duplicateNote(id){
+  const src = notes[id];
+  const nid = uid('note');
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.title = (copy.title||'Sans titre') + ' (copie)';
+  copy.createdAt = Date.now();
+  copy.updatedAt = Date.now();
+  notes[nid] = copy;
+  persist(); renderList(); loadNote(nid);
+}
+
+/* Audio handling */
+audioInput.addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  if(!currentId) newNote();
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    notes[currentId].audioDataUrl = ev.target.result;
+    notes[currentId].audioFilename = f.name;
+    notes[currentId].updatedAt = Date.now();
+    persist();
+    renderAudio();
+  };
+  reader.readAsDataURL(f);
+});
+removeAudio.addEventListener('click', ()=>{
+  if(!currentId) return;
+  notes[currentId].audioDataUrl = null;
+  notes[currentId].audioFilename = null;
+  persist();
+  renderAudio();
+});
+function renderAudio(){
+  audioPlayerContainer.innerHTML = '';
+  if(!currentId) return;
+  const s = notes[currentId];
+  if(s && s.audioDataUrl){
+    const audio = document.createElement('audio');
+    audio.controls = true;
+    audio.src = s.audioDataUrl;
+    audio.style.width = '100%';
+    audioPlayerContainer.appendChild(audio);
+    const fn = document.createElement('div'); fn.className='small'; fn.style.marginTop='6px'; fn.textContent = s.audioFilename || '';
+    audioPlayerContainer.appendChild(fn);
+  }
+}
+
+/* Export */
+function exportTxt(){
+  if(!currentId) return alert('Charge une note.');
+  const s = notes[currentId];
+  const lines = [];
+  lines.push(s.title || 'Sans titre');
+  lines.push((s.category||'') + ' · ' + (s.genre||'') + (s.bpm?(' · '+s.bpm+' BPM'):'') + (s.progress?(' · '+s.progress+'%'):'' ) );
+  lines.push('---\n');
+  lines.push(s.content || '');
+  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (s.title||'note') + '.txt'; a.click();
+}
+function exportPdf(){
+  if(!currentId) return alert('Charge une note.');
+  const s = notes[currentId];
+  const html = `<html><head><meta charset="utf-8"><title>${escapeHtml(s.title)}</title>
+    <style>body{font-family:Arial;padding:20px;color:#111} h1{font-size:24px;margin-bottom:8px} pre{white-space:pre-wrap;font-size:14px}</style></head><body>
+    <h1>${escapeHtml(s.title)}</h1>
+    <div style="color:#666;margin-bottom:8px">${escapeHtml(s.category||'')} · ${escapeHtml(s.genre||'')} ${s.bpm?('· '+escapeHtml(String(s.bpm))+' BPM'):''} ${s.key?('· '+escapeHtml(s.key)):''} ${s.progress?('· '+escapeHtml(String(s.progress))+'%'):''}</div>
+    <pre>${escapeHtml(s.content||'')}</pre></body></html>`;
+  const w = window.open('', '_blank'); w.document.write(html); w.document.close();
+  setTimeout(()=>{ w.focus(); w.print(); }, 400);
+}
+function escapeHtml(t){ return (t||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* Downloads / actions */
+function downloadAll(){
+  const parts=[];
+  Object.keys(notes).forEach(id=>{
+    const s = notes[id];
+    parts.push('### ' + (s.title||'Sans titre') + '\n');
+    parts.push((s.category||'') + ' · ' + (s.genre||'') + (s.progress?(' · '+s.progress+'%') : ''));
+    parts.push('\n' + (s.content||'') + '\n\n-----\n');
+  });
+  const blob = new Blob([parts.join('\n')], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='rap_notes_all.txt'; a.click();
+}
+function clearEditor(){
+  titleInput.value = '';
+  content.value = '';
+  bpmInput.value = '';
+  keyInput.value = '';
+  genreSelect.value = 'Rap';
+  categorySelect.value = categories[0]||'Perso';
+  if(currentId){ delete notes[currentId]; currentId = null; persist(); renderList(); }
+}
+
+/* UI wiring */
+newBtn.addEventListener('click', ()=> newNote());
+saveBtn.addEventListener('click', ()=> saveNote());
+exportTxtBtn.addEventListener('click', ()=> exportTxt());
+exportPdfBtn.addEventListener('click', ()=> exportPdf());
+deleteBtn.addEventListener('click', ()=> { if(currentId) confirmDelete(currentId); });
+manageCatsBtn.addEventListener('click', ()=> { renderCatModal(); catModal.classList.add('open'); });
+addCatBtn.addEventListener('click', ()=> { const v = newCatInput.value.trim(); if(!v) return; categories.push(v); newCatInput.value=''; persistCats(); renderCatModal(); });
+closeCatBtn.addEventListener('click', ()=> catModal.classList.remove('open'));
+document.getElementById('saveBtn').addEventListener('dblclick', ()=> saveNote());
+
+downloadAllBtn.addEventListener('click', ()=> downloadAll());
+clearBtn.addEventListener('click', ()=> {
+  if(confirm('Créer une nouvelle note (la note courante reste sauvegardée). OK pour créer une nouvelle ?')) newNote();
+});
+
+/* Theme */
+themeToggle.addEventListener('click', ()=>{
+  const b = document.body;
+  const t = b.getAttribute('data-theme');
+  if(t === 'dark'){ b.setAttribute('data-theme',''); themeToggle.textContent = '🌙'; localStorage.removeItem('rap_theme_slider'); }
+  else { b.setAttribute('data-theme','dark'); themeToggle.textContent = '☀️'; localStorage.setItem('rap_theme_slider','dark'); }
+});
+
+/* Progress slider behavior */
+progressSlider.addEventListener('input', ()=>{
+  progressValue.textContent = progressSlider.value + '%';
+  // update model immediately
+  if(currentId && notes[currentId]){
+    notes[currentId].progress = Number(progressSlider.value);
+    notes[currentId].updatedAt = Date.now();
+    persist();
+    renderList(searchInput.value.trim().toLowerCase());
+  }
+});
+
+/* Auto-save on typing (debounced) */
+let autosaveTimer = null;
+content.addEventListener('input', ()=> {
+  if(autosaveTimer) clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(()=>{ saveNote(); }, 900);
+});
+titleInput.addEventListener('input', ()=> { if(autosaveTimer) clearTimeout(autosaveTimer); autosaveTimer = setTimeout(()=>{ saveNote(); }, 900); });
+categorySelect.addEventListener('change', ()=> saveNote());
+genreSelect.addEventListener('change', ()=> saveNote());
+bpmInput.addEventListener('input', ()=> saveNote());
+keyInput.addEventListener('input', ()=> saveNote());
+searchInput.addEventListener('input', ()=> renderList(searchInput.value.trim().toLowerCase()));
+
+/* Duplicate / Confirm delete helpers used in markup */
+window.confirmDelete = confirmDelete;
+window.duplicateNote = duplicateNote;
+
+/* Init */
+function init(){
+  populateCategories();
+  renderList();
+  // load first or create
+  const keys = Object.keys(notes);
+  if(keys.length) loadNote(keys[0]);
+  else newNote();
+  // apply theme if stored
+  if(localStorage.getItem('rap_theme_slider') === 'dark'){ document.body.setAttribute('data-theme','dark'); themeToggle.textContent='☀️'; }
+}
+init();
+
+/* Expose save on unload */
+window.addEventListener('beforeunload', ()=> saveNote());
+
+</script>
+</body>
+</html>

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Todo — Matrice d’Eisenhower</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;        /* ardoise sombre */
+      --panel: #111827;     /* gris froid */
+      --muted: #94a3b8;     /* gris texte secondaire */
+      --text: #e5e7eb;      /* gris clair */
+      --accent: #60a5fa;    /* bleu */
+      --ok: #22c55e;        /* vert */
+      --warn: #f59e0b;      /* orange */
+      --bad: #ef4444;       /* rouge */
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1000px 600px at 10% -10%, #1f2937 0, transparent 60%), var(--bg);
+      color: var(--text);
+      padding: 24px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 32px);
+      letter-spacing: .3px;
+    }
+
+    .subtitle { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+    /* Formulaire d'ajout */
+    form.add {
+      display: grid;
+      grid-template-columns: 1fr minmax(120px, 180px) minmax(100px, 140px) auto;
+      gap: 10px;
+      background: var(--panel);
+      padding: 12px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    input[type="text"], select, input[type="date"] {
+      background: #0b1220;
+      border: 1px solid #1f2937;
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      outline: none;
+    }
+    input[type="text"]::placeholder { color: #64748b; }
+    button {
+      background: var(--accent);
+      color: #0b1220;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    button:hover { filter: brightness(1.08); }
+    button:active { transform: translateY(1px); }
+
+    /* Grille 2x2 */
+    .grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-auto-rows: 1fr;
+      gap: 16px;
+    }
+
+    .col {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 12px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 280px;
+    }
+
+    .col h2 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .hint { color: var(--muted); font-size: 12px; }
+
+    /* Couleurs d’en-tête par quadrant */
+    .q0 h2 span.badge { background: var(--ok);    }
+    .q1 h2 span.badge { background: var(--warn);  }
+    .q2 h2 span.badge { background: #38bdf8;      }
+    .q3 h2 span.badge { background: var(--bad);   }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: #00111a;
+    }
+
+    /* Zone de liste (cible drop) */
+    .list {
+      border: 2px dashed transparent;
+      border-radius: 12px;
+      padding: 6px;
+      overflow: auto;
+    }
+    .list.dragover {
+      border-color: #334155;
+      background: rgba(51,65,85,.2);
+    }
+
+    /* Tâche */
+    .item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+      background: #0b1220;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 8px 10px;
+      margin: 8px 0;
+    }
+    .item[draggable="true"] { cursor: grab; }
+    .item:active { cursor: grabbing; }
+
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .title .text { font-size: 14px; }
+    .title .meta { color: var(--muted); font-size: 11px; }
+
+    .done .text { text-decoration: line-through; opacity: .7; }
+
+    .controls {
+      display: flex;
+      gap: 6px;
+    }
+    .icon {
+      background: #0f172a;
+      border: 1px solid #1f2937;
+      color: var(--text);
+      font-size: 12px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .icon:hover { filter: brightness(1.12); }
+
+    /* Placeholder visuel lors du drag */
+    .placeholder {
+      height: 42px;
+      margin: 8px 0;
+      border: 2px dashed #475569;
+      border-radius: 12px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      form.add {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+      form.add .btn-add {
+        grid-column: 1 / -1;
+      }
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Matrice d’Eisenhower — Todo</h1>
+      <div class="subtitle">Organise tes tâches par <strong>Importance</strong> et <strong>Urgence</strong>. Glisse-dépose pour déplacer, coche pour terminer.</div>
+    </div>
+    <div class="subtitle">Total : <span id="totalCount">0</span> • Terminées : <span id="doneCount">0</span></div>
+  </header>
+
+  <!-- Formulaire d’ajout rapide -->
+  <form class="add" id="addForm">
+    <input type="text" id="taskInput" placeholder="Ex. Appeler le client, rédiger le rapport…" />
+    <select id="quadrantSelect" title="Quadrant initial">
+      <option value="0">Urgent & Important (Faire)</option>
+      <option value="1">Pas urgent & Important (Planifier)</option>
+      <option value="2">Urgent & Pas important (Déléguer)</option>
+      <option value="3">Pas urgent & Pas important (Éliminer)</option>
+    </select>
+    <input type="date" id="dueInput" />
+    <button type="submit" class="btn-add">Ajouter</button>
+  </form>
+
+  <!-- Grille 2x2 -->
+  <section class="grid">
+    <!-- Q0 -->
+    <div class="col q0">
+      <h2>
+        <span>Faire (Urgent & Important)</span>
+        <span class="badge" id="count-q0">0</span>
+      </h2>
+      <div class="hint">Fais-le maintenant.</div>
+      <div class="list" id="list-q0" data-q="0"></div>
+    </div>
+
+    <!-- Q1 -->
+    <div class="col q1">
+      <h2>
+        <span>Planifier (Pas urgent & Important)</span>
+        <span class="badge" id="count-q1">0</span>
+      </h2>
+      <div class="hint">Bloque un créneau.</div>
+      <div class="list" id="list-q1" data-q="1"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="col q2">
+      <h2>
+        <span>Déléguer (Urgent & Pas important)</span>
+        <span class="badge" id="count-q2">0</span>
+      </h2>
+      <div class="hint">Confie la tâche à quelqu’un.</div>
+      <div class="list" id="list-q2" data-q="2"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="col q3">
+      <h2>
+        <span>Éliminer (Pas urgent & Pas important)</span>
+        <span class="badge" id="count-q3">0</span>
+      </h2>
+      <div class="hint">Supprime ou remets plus tard.</div>
+      <div class="list" id="list-q3" data-q="3"></div>
+    </div>
+  </section>
+
+  <script>
+    // =========================
+    // Données & persistance
+    // =========================
+
+    // Tableau en mémoire de toutes les tâches
+    let tasks = [];
+
+    // Clé unique pour localStorage
+    const STORAGE_KEY = "eisenhower_tasks_v1";
+
+    // Récupère chaque conteneur de liste (une par quadrant)
+    const lists = [
+      document.getElementById("list-q0"),
+      document.getElementById("list-q1"),
+      document.getElementById("list-q2"),
+      document.getElementById("list-q3"),
+    ];
+
+    // Compteurs visuels par quadrant
+    const counts = [
+      document.getElementById("count-q0"),
+      document.getElementById("count-q1"),
+      document.getElementById("count-q2"),
+      document.getElementById("count-q3"),
+    ];
+
+    // Compteurs globaux (header)
+    const totalCountEl = document.getElementById("totalCount");
+    const doneCountEl  = document.getElementById("doneCount");
+
+    // Raccourcis vers les champs du formulaire
+    const form = document.getElementById("addForm");
+    const taskInput = document.getElementById("taskInput");
+    const quadrantSelect = document.getElementById("quadrantSelect");
+    const dueInput = document.getElementById("dueInput");
+
+    // Élément placeholder pour montrer la position lors du drag
+    const placeholder = document.createElement("div");
+    placeholder.className = "placeholder";
+
+    // =========================
+    // Utilitaires
+    // =========================
+
+    // Génère un ID simple basé sur le temps (suffisant ici)
+    function uid() {
+      return "t_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    // Sauvegarde l'état courant dans localStorage
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    }
+
+    // Charge l'état depuis localStorage (si présent)
+    function load() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      tasks = raw ? JSON.parse(raw) : [];
+    }
+
+    // Formate une date AAAA-MM-JJ en JJ/MM/AAAA (simple, optionnel)
+    function formatDate(iso) {
+      if (!iso) return "";
+      const [y,m,d] = iso.split("-");
+      return `${d}/${m}/${y}`;
+    }
+
+    // Met à jour les compteurs par quadrant + globaux
+    function updateCounts() {
+      // Compte par quadrant
+      for (let q = 0; q < 4; q++) {
+        counts[q].textContent = tasks.filter(t => t.quadrant === q).length;
+      }
+      // Globaux
+      totalCountEl.textContent = tasks.length;
+      doneCountEl.textContent  = tasks.filter(t => t.done).length;
+    }
+
+    // =========================
+    // Rendu DOM
+    // =========================
+
+    // Crée l'élément DOM d'une tâche à partir de l'objet JS
+    function createTaskElement(task) {
+      // Crée un conteneur <div> pour la tâche
+      const el = document.createElement("div");
+      el.className = "item";
+      el.draggable = true;            // rend l’item déplaçable
+      el.dataset.id = task.id;        // stocke l'id pour le retrouver
+
+      // Si la tâche est terminée, ajoute la classe visuelle
+      if (task.done) el.classList.add("done");
+
+      // Checkbox (pour cocher/décocher)
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = task.done;
+
+      // Zone titre + meta (date)
+      const title = document.createElement("div");
+      title.className = "title";
+
+      // Texte principal
+      const spanText = document.createElement("span");
+      spanText.className = "text";
+      spanText.textContent = task.text;
+
+      // Infos méta (date d’échéance)
+      const meta = document.createElement("span");
+      meta.className = "meta";
+      meta.textContent = task.due ? ("Échéance : " + formatDate(task.due)) : "";
+
+      // Regroupe le texte et la meta
+      title.appendChild(spanText);
+      title.appendChild(meta);
+
+      // Boutons d'action (éditer / supprimer)
+      const controls = document.createElement("div");
+      controls.className = "controls";
+
+      const btnEdit = document.createElement("button");
+      btnEdit.className = "icon";
+      btnEdit.title = "Éditer";
+      btnEdit.textContent = "✎";
+
+      const btnDel = document.createElement("button");
+      btnDel.className = "icon";
+      btnDel.title = "Supprimer";
+      btnDel.textContent = "🗑";
+
+      controls.appendChild(btnEdit);
+      controls.appendChild(btnDel);
+
+      // Assemble la ligne
+      el.appendChild(checkbox);
+      el.appendChild(title);
+      el.appendChild(controls);
+
+      // === Interactions ===
+
+      // Clic sur la checkbox → bascule done
+      checkbox.addEventListener("change", () => {
+        task.done = checkbox.checked;  // met à jour la donnée
+        el.classList.toggle("done", task.done); // met à jour le style
+        save();                        // persiste
+        updateCounts();                // met à jour les compteurs
+      });
+
+      // Édition rapide (prompt simple)
+      btnEdit.addEventListener("click", () => {
+        const newText = prompt("Modifier la tâche :", task.text);
+        if (newText !== null && newText.trim() !== "") {
+          task.text = newText.trim();       // met à jour le texte
+          spanText.textContent = task.text; // met à jour l'affichage
+          save();
+        }
+      });
+
+      // Suppression
+      btnDel.addEventListener("click", () => {
+        // Filtre hors du tableau en mémoire
+        tasks = tasks.filter(t => t.id !== task.id);
+        // Retire du DOM
+        el.remove();
+        // Sauve + compteurs
+        save();
+        updateCounts();
+      });
+
+      // Drag start → mémorise l'id de la tâche en cours de déplacement
+      el.addEventListener("dragstart", (ev) => {
+        ev.dataTransfer.setData("text/plain", task.id); // stocke l'id dans le drag payload
+        // Utilise un effet visuel custom (optionnel)
+        ev.dataTransfer.effectAllowed = "move";
+        // Ajoute une petite opacité pour le feedback
+        el.style.opacity = ".6";
+      });
+
+      // Fin du drag → restaure l'opacité
+      el.addEventListener("dragend", () => {
+        el.style.opacity = "1";
+        // Retire le placeholder éventuel
+        placeholder.remove();
+      });
+
+      // Gestion du réordonnancement à l'intérieur d'une liste :
+      // on écoute dragover sur chaque item pour insérer le placeholder au bon endroit
+      el.addEventListener("dragover", (ev) => {
+        ev.preventDefault(); // nécessaire pour autoriser le drop
+        const rect = el.getBoundingClientRect(); // récupère la boîte de l'élément
+        const before = (ev.clientY - rect.top) < rect.height / 2; // souris dans la moitié haute ?
+        // Insère le placeholder avant ou après l’élément selon la position
+        if (before) {
+          el.parentElement.insertBefore(placeholder, el);
+        } else {
+          el.parentElement.insertBefore(placeholder, el.nextSibling);
+        }
+      });
+
+      return el;
+    }
+
+    // Vide et reconstruit toutes les listes à partir des données
+    function renderAll() {
+      // Vide chaque liste
+      for (const list of lists) {
+        list.innerHTML = "";
+      }
+      // Pour chaque quadrant, affiche les tâches dans l'ordre
+      for (let q = 0; q < 4; q++) {
+        const list = lists[q];
+        const subset = tasks
+          .filter(t => t.quadrant === q)
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        for (const t of subset) {
+          list.appendChild(createTaskElement(t));
+        }
+      }
+      // Met à jour les compteurs après rendu
+      updateCounts();
+    }
+
+    // =========================
+    // Drag & Drop sur les colonnes
+    // =========================
+
+    // Pour permettre le drop, on intercepte dragover sur les conteneurs
+    for (const list of lists) {
+      // Surligne visuellement la zone quand quelque chose la survole
+      list.addEventListener("dragenter", () => list.classList.add("dragover"));
+      list.addEventListener("dragleave", (ev) => {
+        // Si on quitte la zone (et pas vers un enfant), retire la classe
+        if (!list.contains(ev.relatedTarget)) list.classList.remove("dragover");
+      });
+
+      // dragover → autorise le drop et place le placeholder à la fin si vide
+      list.addEventListener("dragover", (ev) => {
+        ev.preventDefault(); // indispensable pour pouvoir drop
+        // Si aucun placeholder dans cette liste, l'ajouter en fin
+        if (!placeholder.parentElement || placeholder.parentElement !== list) {
+          list.appendChild(placeholder);
+        }
+      });
+
+      // drop → déplace la tâche
+      list.addEventListener("drop", (ev) => {
+        ev.preventDefault();                 // évite l'ouverture de lien
+        list.classList.remove("dragover");   // retire l'effet survol
+        const id = ev.dataTransfer.getData("text/plain"); // id récupéré
+        const task = tasks.find(t => t.id === id);        // retrouve la tâche
+        if (!task) return;
+
+        // Change le quadrant si on a déposé dans une autre liste
+        const newQ = parseInt(list.dataset.q, 10);
+        task.quadrant = newQ;
+
+        // Détermine le nouvel ordre en fonction de la position du placeholder
+        const children = Array.from(list.querySelectorAll(".item"));
+        // Si le placeholder est présent, on insère à sa position
+        let index = Array.from(list.children).indexOf(placeholder);
+        if (index === -1 || index > children.length) index = children.length;
+
+        // Recalcule des "order" pour ce quadrant
+        // 1) Récupère les ids des tâches dans l’ordre visuel cible
+        const idsInList = Array.from(list.querySelectorAll(".item"))
+          .map(el => el.dataset.id)
+          .filter(Boolean);
+
+        // 2) Insère l'id en cours à la position déterminée
+        const withoutCurrent = idsInList.filter(x => x !== id);
+        withoutCurrent.splice(index, 0, id);
+
+        // 3) Applique un order séquentiel
+        withoutCurrent.forEach((tid, i) => {
+          const tt = tasks.find(t => t.id === tid);
+          if (tt) tt.order = i;
+        });
+
+        // 4) Re-rendre toute l’UI proprement
+        placeholder.remove();
+        save();
+        renderAll();
+      });
+    }
+
+    // =========================
+    // Ajout de tâche (form)
+    // =========================
+
+    // Soumission du formulaire d’ajout
+    form.addEventListener("submit", (ev) => {
+      ev.preventDefault(); // empêche le rechargement de page
+      const text = taskInput.value.trim();  // récupère et nettoie le texte
+      if (!text) return;                    // si vide, on ignore
+
+      const q = parseInt(quadrantSelect.value, 10); // quadrant choisi
+      const due = dueInput.value || "";             // date (optionnelle)
+
+      // Calcule le prochain "order" en fin de liste du quadrant
+      const maxOrder = Math.max(-1, ...tasks.filter(t => t.quadrant === q).map(t => t.order ?? 0));
+      const nextOrder = maxOrder + 1;
+
+      // Construit l’objet tâche
+      const task = {
+        id: uid(),      // identifiant unique
+        text,           // libellé
+        done: false,    // non terminée par défaut
+        quadrant: q,    // quadrant cible
+        due,            // date (peut être "")
+        order: nextOrder
+      };
+
+      // Ajoute au tableau et persiste
+      tasks.push(task);
+      save();
+
+      // Ajoute visuellement (sans re-render global)
+      const el = createTaskElement(task);
+      lists[q].appendChild(el);
+
+      // Réinitialise le formulaire et compteurs
+      taskInput.value = "";
+      dueInput.value = "";
+      updateCounts();
+    });
+
+    // =========================
+    // Initialisation
+    // =========================
+
+    // Charge l’état sauvegardé, puis affiche
+    load();
+    renderAll();
+  </script>
+</body>
+</html>

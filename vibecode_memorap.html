@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>Rap Notes 🎤</title>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f5f3ef; /* beige/crème */
+        display: flex;
+        height: 100vh;
+        color: #333;
+    }
+
+    /* --- Sidebar (gauche) --- */
+    #sidebar {
+        width: 280px;
+        background: #faf8f5;
+        border-right: 1px solid #ddd;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #sidebar-header {
+        padding: 15px;
+        font-size: 20px;
+        font-weight: bold;
+        border-bottom: 1px solid #ddd;
+    }
+
+    #newSongBtn {
+        margin: 15px;
+        padding: 10px;
+        font-size: 14px;
+        cursor: pointer;
+        border: none;
+        border-radius: 6px;
+        background: #e6e1d8;
+        transition: 0.2s;
+    }
+    #newSongBtn:hover {
+        background: #d4cdc3;
+    }
+
+    #songList {
+        flex-grow: 1;
+        overflow-y: auto;
+    }
+
+    .song-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+        transition: background 0.2s;
+    }
+    .song-item:hover {
+        background: #f0ede9;
+    }
+    .song-item.active {
+        background: #e5ded4;
+        font-weight: bold;
+    }
+
+    /* --- Zone d'édition (droite) --- */
+    #editor {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #editor-header {
+        padding: 15px;
+        font-size: 18px;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f7f5f0;
+    }
+
+    #songTitleInput {
+        width: 60%;
+        padding: 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+
+    #saveBtn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        background: #dcd4c6;
+        cursor: pointer;
+        font-size: 14px;
+        transition: 0.2s;
+    }
+    #saveBtn:hover {
+        background: #cfc7b8;
+    }
+
+    #songContent {
+        flex-grow: 1;
+        border: none;
+        padding: 20px;
+        font-size: 16px;
+        resize: none;
+        outline: none;
+        background: #fffdf9;
+    }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div id="sidebar">
+    <div id="sidebar-header">🎧 Mes Chansons</div>
+    <button id="newSongBtn">➕ Nouvelle chanson</button>
+    <div id="songList"></div>
+</div>
+
+<!-- Editor -->
+<div id="editor">
+    <div id="editor-header">
+        <input type="text" id="songTitleInput" placeholder="Titre de la chanson..." />
+        <button id="saveBtn">💾 Enregistrer</button>
+    </div>
+    <textarea id="songContent" placeholder="Écris tes lyrics ici..."></textarea>
+</div>
+
+<script>
+    const songListDiv = document.getElementById('songList');
+    const songTitleInput = document.getElementById('songTitleInput');
+    const songContent = document.getElementById('songContent');
+    const saveBtn = document.getElementById('saveBtn');
+    const newSongBtn = document.getElementById('newSongBtn');
+
+    let songs = JSON.parse(localStorage.getItem('rap_songs')) || {};
+    let currentSongId = null;
+
+    function refreshSongList() {
+        songListDiv.innerHTML = '';
+        Object.keys(songs).forEach(id => {
+            const song = songs[id];
+            const div = document.createElement('div');
+            div.className = 'song-item' + (id === currentSongId ? ' active' : '');
+            div.textContent = "🎵 " + (song.title || "Sans titre");
+            div.onclick = () => loadSong(id);
+            songListDiv.appendChild(div);
+        });
+    }
+
+    function loadSong(id) {
+        currentSongId = id;
+        const song = songs[id];
+        songTitleInput.value = song.title;
+        songContent.value = song.content;
+        refreshSongList();
+    }
+
+    function saveSong() {
+        if (!currentSongId) {
+            currentSongId = 'song_' + Date.now();
+        }
+        songs[currentSongId] = {
+            title: songTitleInput.value.trim(),
+            content: songContent.value
+        };
+        localStorage.setItem('rap_songs', JSON.stringify(songs));
+        refreshSongList();
+    }
+
+    function newSong() {
+        currentSongId = null;
+        songTitleInput.value = '';
+        songContent.value = '';
+        refreshSongList();
+    }
+
+    saveBtn.addEventListener('click', saveSong);
+    newSongBtn.addEventListener('click', newSong);
+
+    // Chargement initial
+    refreshSongList();
+    if (Object.keys(songs).length) {
+        loadSong(Object.keys(songs)[0]);
+    }
+</script>
+
+</body>
+</html>

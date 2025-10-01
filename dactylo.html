@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exercices de Dactylographie</title>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #0ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  h1 {
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  .container {
+    max-width: 600px;
+    width: 90%;
+    padding: 20px;
+    margin-top: 30px;
+    background: #222;
+    border-radius: 15px;
+    box-shadow: 0 0 20px #0ff, inset 0 0 10px #0ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .texte-a-taper {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+    text-align: center;
+    padding: 10px;
+    color: #fff;
+  }
+
+  input {
+    width: 100%;
+    font-size: 1.2em;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    margin-bottom: 20px;
+    background: #111;
+    color: #0ff;
+    box-shadow: 0 0 10px #0ff inset;
+  }
+
+  button {
+    padding: 10px 20px;
+    font-size: 1em;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: linear-gradient(45deg, #ff00ff, #0ff);
+    color: #fff;
+    box-shadow: 0 0 10px #ff00ff, 0 0 20px #0ff inset;
+    margin: 5px;
+  }
+
+  button:active {
+    transform: translateY(2px);
+    box-shadow: 0 0 5px #ff00ff, 0 0 10px #0ff inset;
+  }
+
+  .score {
+    margin-top: 15px;
+    font-size: 1.2em;
+  }
+
+  @media (max-width: 500px) {
+    .texte-a-taper {
+      font-size: 1.2em;
+    }
+
+    input {
+      font-size: 1em;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>Exercice de Dactylographie</h1>
+<div class="container">
+  <div class="texte-a-taper" id="texteA">Chargement...</div>
+  <input type="text" id="inputTexte" placeholder="Tape ici..." autocomplete="off">
+  <button id="startBtn">Commencer</button>
+  <div class="score" id="score"></div>
+</div>
+
+<script>
+const textes = [
+  "Le chat noir saute sur le mur.",
+  "Bonjour, comment allez-vous aujourd'hui ?",
+  "La programmation rend le cerveau plus agile.",
+  "Apprendre à taper vite est très utile.",
+  "Chaque exercice améliore votre vitesse."
+];
+
+let niveau = 0;
+let startTime;
+let endTime;
+
+// Récupération des éléments
+const texteA = document.getElementById("texteA");
+const inputTexte = document.getElementById("inputTexte");
+const startBtn = document.getElementById("startBtn");
+const scoreDiv = document.getElementById("score");
+
+// Commencer l'exercice
+startBtn.addEventListener("click", () => {
+  startLevel();
+});
+
+function startLevel() {
+  if (niveau >= textes.length) {
+    scoreDiv.textContent = "Félicitations ! Tous les niveaux terminés.";
+    inputTexte.disabled = true;
+    startBtn.disabled = true;
+    return;
+  }
+
+  // Afficher le texte
+  texteA.textContent = textes[niveau];
+  inputTexte.value = "";
+  inputTexte.disabled = false;
+  inputTexte.focus();
+  startTime = new Date();
+}
+
+// Vérification de la saisie
+inputTexte.addEventListener("input", () => {
+  if (inputTexte.value === textes[niveau]) {
+    endTime = new Date();
+    const tempsSec = (endTime - startTime) / 1000;
+    const mots = textes[niveau].split(" ").length;
+    const wpm = Math.round((mots / tempsSec) * 60);
+
+    scoreDiv.textContent = `Niveau ${niveau+1} terminé ! Vitesse : ${wpm} mots/min (${tempsSec.toFixed(2)} sec)`;
+    niveau++;
+    setTimeout(startLevel, 1000); // passe au niveau suivant
+  }
+});
+</script>
+
+</body>
+</html>
