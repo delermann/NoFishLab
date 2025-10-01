@@ -1,2 +1,2 @@
 # NoFishLab
-Lab whitout fish - Projets, garantis sans poisson, (auto)guidées par l'IA a fins d'exercices dans un contexte d'apprentissage.
+Lab whitout fish - Projets, garantis sans poisson, guidées par l'IA et par moi , à fin d'exercices dans un contexte d'apprentissage.
